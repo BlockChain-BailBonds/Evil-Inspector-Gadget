@@ -13,4 +13,5 @@ Existing repository: esp32-mermaid-flipper contains user changes and was preserv
 New repository: 918-technologies-evil-inspector-gadget initialized with an isolated Python venv.
 
 Unverified / pending: ESP-IDF, PlatformIO direct invocation, uFBT/FBT, actual ESP32-S3 identity, actual Flipper identity, UART electrical validation, physical integration.
+Toolchain update: native esptool 5.6.0 install failed on Android ARM64 due to cryptography/Rust target incompatibility. Ubuntu 24.04 ARM64 PRoot was provisioned with Python 3.12 and esptool 5.6.0; version command passed. No device was present during the final esptool probe.
 

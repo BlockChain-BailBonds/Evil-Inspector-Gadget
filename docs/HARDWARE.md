@@ -6,3 +6,7 @@ UART wiring is fixed: ESP32 GPIO43 TX0 to Flipper pin 14 RX, ESP32 GPIO44 RX0 fr
 
 Physical hardware status at repository creation: `NOT TESTED`.
 
+## Host probe toolchain
+
+Termux native Python 3.13 cannot install `esptool` because its `cryptography` dependency has no compatible Android ARM64 wheel and attempts an unsupported Rust target. Ubuntu 24.04 ARM64 under `proot-distro` is therefore the reproducible probe environment. It contains Python 3.12 and `esptool==5.6.0` in `/root/eig-venv`; its version command was verified. A device probe is valid only when `/dev/ttyACM0` or another explicitly identified serial node is present. No flash command is part of the probe.
+
