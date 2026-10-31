@@ -5,6 +5,7 @@ build/
 dist/*.bin
 dist/*.elf
 dist/*.uf2
+tools/usb_descriptor_probe
 .env
 .env.*
 
