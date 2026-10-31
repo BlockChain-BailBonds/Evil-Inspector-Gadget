@@ -1,0 +1,11 @@
+App(
+    appid="evil_inspector_918",
+    name="Evil Inspector 918",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="redteam_dragon_main",
+    requires=["gui"],
+    stack_size=4 * 1024,
+    fap_category="GPIO",
+    sources=["*.c"],
+    fap_icon="icon.png",
+)

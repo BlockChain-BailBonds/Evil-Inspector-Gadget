@@ -1,0 +1,16 @@
+{
+  "source_filename": "approved_redteam_dragon_mockup.png",
+  "source_sha256": "a371199a05ca6bd6cbf5b7fbcd833f85d67279c940626e161b22d3d2d66d76e8",
+  "display": "320x480 RGB565 portrait",
+  "source_crop_xyxy": [
+    224,
+    110,
+    670,
+    764
+  ],
+  "processed_png": "assets/dragon_dashboard_320x480.png",
+  "raw_sha256": "146f5a2f671069c7417bff56697d1dd6789553ec41bcf427492d0d4b3e5b3435",
+  "raw_bytes": 307200,
+  "ui_version": "1.0.8",
+  "orientation": "software portrait mapping over proven ST7796S 480x320 driver"
+}

@@ -1,0 +1,27 @@
+name: Build Evil Inspector Flipper FAP
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "flipper_fap/**"
+      - ".github/workflows/build-flipper-fap.yml"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install ufbt
+        run: python -m pip install --upgrade ufbt
+      - name: Build FAP
+        working-directory: flipper_fap/inspector_gadget
+        run: ufbt
+      - name: Locate generated FAP
+        run: find flipper_fap/inspector_gadget/dist -type f -name '*.fap' -print -quit | grep -q .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: evil-inspector-flipper-fap
+          path: flipper_fap/inspector_gadget/dist/**/*.fap
+          if-no-files-found: error
