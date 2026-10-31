@@ -1,0 +1,10 @@
+App(
+    appid="go_gadget",
+    name="Go Go Gadget",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="go_gadget_app",
+    cdefines=["EIG_VERSION=\\\"1.0.0\\\""],
+    requires=["gui"],
+    stack_size=2048,
+    fap_version="1.0",
+)
