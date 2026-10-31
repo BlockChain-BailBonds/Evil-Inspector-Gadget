@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+build/
+dist/*.bin
+dist/*.elf
+dist/*.uf2
+.env
+.env.*
+

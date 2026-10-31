@@ -1,0 +1,69 @@
+{
+  "cwd": "/data/data/com.termux/files/home/918-technologies-evil-inspector-gadget",
+  "machine": "aarch64",
+  "platform": "Android-17-aarch64-64bit-ELF",
+  "python": "3.13.13",
+  "tools": {
+    "adb": {
+      "path": null,
+      "version": null
+    },
+    "clang": {
+      "path": "/data/data/com.termux/files/usr/bin/clang",
+      "version": "clang version 21.1.8"
+    },
+    "cmake": {
+      "path": "/data/data/com.termux/files/usr/bin/cmake",
+      "version": "cmake version 4.3.4"
+    },
+    "gh": {
+      "path": "/data/data/com.termux/files/usr/bin/gh",
+      "version": "gh version 2.95.0"
+    },
+    "git": {
+      "path": "/data/data/com.termux/files/usr/bin/git",
+      "version": "git version 2.54.0"
+    },
+    "idf.py": {
+      "path": null,
+      "version": null
+    },
+    "ninja": {
+      "path": "/data/data/com.termux/files/usr/bin/ninja",
+      "version": "1.13.2"
+    },
+    "node": {
+      "path": "/data/data/com.termux/files/usr/bin/node",
+      "version": "v24.17.0"
+    },
+    "npm": {
+      "path": "/data/data/com.termux/files/usr/bin/npm",
+      "version": "11.17.0"
+    },
+    "pio": {
+      "path": null,
+      "version": null
+    },
+    "proot": {
+      "path": "/data/data/com.termux/files/usr/bin/proot",
+      "version": " _____ _____              ___"
+    },
+    "proot-distro": {
+      "path": "/data/data/com.termux/files/usr/bin/proot-distro",
+      "version": ""
+    },
+    "python": {
+      "path": "/data/data/com.termux/files/usr/bin/python",
+      "version": "Python 3.13.13"
+    },
+    "termux-usb": {
+      "path": "/data/data/com.termux/files/usr/bin/termux-usb",
+      "version": "termux-usb: illegal option --"
+    },
+    "ufbt": {
+      "path": null,
+      "version": null
+    }
+  },
+  "usb_devices": "[\n  \"/dev/bus/usb/001/002\"\n]"
+}
