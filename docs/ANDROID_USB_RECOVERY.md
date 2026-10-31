@@ -33,9 +33,9 @@ Observed read-only probe result:
 CH340 opened and configured: PASS
 UART reset transport: PASS
 ESP ROM bootloader sync: PASS
-automatic chip identification: FAIL (timeout)
-explicit esp32s3 identification: FAIL (timeout)
-flash identity and characteristics: NOT TESTED
+automatic chip identification: PASS (esp32s3, ROM magic 0x00000009)
+SPI flash attached: PASS
+flash capacity and PSRAM characteristics: NOT TESTED (the audited probe does not expose a capacity readout)
 ```
 
 The adapter uses the Termux USB file descriptor and raw USB endpoints; it does not require root, `chmod`, or a Linux serial node. No write or erase command was run.
