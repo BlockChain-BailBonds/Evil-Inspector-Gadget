@@ -14,4 +14,5 @@ New repository: 918-technologies-evil-inspector-gadget initialized with an isola
 
 Unverified / pending: ESP-IDF, PlatformIO direct invocation, uFBT/FBT, actual ESP32-S3 identity, actual Flipper identity, UART electrical validation, physical integration.
 Toolchain update: native esptool 5.6.0 install failed on Android ARM64 due to cryptography/Rust target incompatibility. Ubuntu 24.04 ARM64 PRoot was provisioned with Python 3.12 and esptool 5.6.0; version command passed. No device was present during the final esptool probe.
+USB recovery evidence: termux-usb permission granted. Raw descriptor probe identified VID:PID 1A86:7523, vendor-specific CH340-class bridge, bulk endpoints 0x82/0x02 and interrupt endpoint 0x81. Audited nrflash revision 1df332f7b83c98df9c4bf39abb548ef7f7f5b006 opened/configured the bridge and synchronized with the ESP ROM; automatic and explicit ESP32-S3 identity probes timed out. No flash or erase operation was attempted.
 

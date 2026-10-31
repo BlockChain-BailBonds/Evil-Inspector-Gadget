@@ -1,0 +1,5 @@
+# Audited upstream adapter, pinned to immutable commit.
+# Review source and license before changing this revision.
+nrflash @ git+https://github.com/7wp81x/Termux-ESP-Flasher.git@1df332f7b83c98df9c4bf39abb548ef7f7f5b006
+espbridge==1.2.0
+pyusb==1.3.1
