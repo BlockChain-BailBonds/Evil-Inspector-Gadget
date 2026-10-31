@@ -1,0 +1,35 @@
+name: Build S3 Inspector
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 's3_redteam_inspector/**'
+      - '.github/workflows/build-s3-inspector.yml'
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install PlatformIO
+        run: python -m pip install --upgrade platformio==6.1.18
+      - name: Run source tests
+        working-directory: s3_redteam_inspector
+        run: python -m unittest discover -s tests -v
+      - name: Build only
+        working-directory: s3_redteam_inspector
+        run: pio run -e s3_uart_inspector
+      - name: Verify images
+        working-directory: s3_redteam_inspector
+        run: |
+          test -s .pio/build/s3_uart_inspector/bootloader.bin
+          test -s .pio/build/s3_uart_inspector/partitions.bin
+          test -s .pio/build/s3_uart_inspector/firmware.bin
+          sha256sum .pio/build/s3_uart_inspector/{bootloader.bin,partitions.bin,firmware.bin}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eig-s3-inspector-16mb
+          path: s3_redteam_inspector/.pio/build/s3_uart_inspector/*.bin
+          if-no-files-found: error
