@@ -16,7 +16,7 @@ The S3 camera GPIO mapping is **board-dependent**. Never assume a number printed
 | 2 | GND | GND | shared ground |
 | 3 | LCD_CS | GPIO47 | chip select |
 | 4 | LCD_RST | GPIO14 | reset |
-| 5 | LCD_RS | GPIO40 | command/data |
+| 5 | LCD_RS | GPIO21 | command/data |
 | 6 | SDI (MOSI) | GPIO41 | SPI output |
 | 7 | SCK | GPIO42 | SPI clock |
 | 8 | LED | leave disconnected | optional backlight drive |
@@ -29,7 +29,7 @@ The S3 camera GPIO mapping is **board-dependent**. Never assume a number printed
 
 Header view: in the user photo, **VCC is far right, SD_CS far left**, with the silkscreen text upright. Disconnect power before altering the Dupont wires. Screen module 5 V power input recommended by manufacturer; SPI GPIO logic must remain 3.3 V. A shared GND is required. If the power source cannot deliver enough display current, use an appropriately regulated separate supply with common GND; do not feed 5 V into any ESP32 GPIO.
 
-The S3 `GPIO40` in this prototype may conflict with onboard microSD DAT0 on some camera boards. `GPIO47` and `GPIO14` may also be wired to camera on some S3 models. The program statically rejects GPIO pins ordinarily reserved for PSRAM (35–37), USB 19/20, UART0 43/44, or strapping 0/3/45/46. **This does not replace checking the actual board schematic and GPIO header.** If any pin overlaps a board peripheral, change the `M3R_LCD_PIN_*` flags in `platformio.ini` and rewire the LCD consistently.
+The S3 `GPIO40` used for CTP_RST in this prototype may conflict with onboard microSD DAT0 on some camera boards. `GPIO47` and `GPIO14` may also be wired to camera on some S3 models. The program statically rejects GPIO pins ordinarily reserved for PSRAM (35–37), USB 19/20, UART0 43/44, or strapping 0/3/45/46. **This does not replace checking the actual board schematic and GPIO header.** If any pin overlaps a board peripheral, change the matching flags in `platformio.ini` and rewire the display consistently.
 
 ## Compile-only (Termux no-root)
 

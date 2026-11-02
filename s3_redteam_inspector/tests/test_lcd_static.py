@@ -30,9 +30,9 @@ class ScreenSafetyTests(unittest.TestCase):
     def test_no_unneeded_dep(self):
         self.assertNotIn('lib_deps',self.pio)
         self.assertIn('#include <SPI.h>',self.driver)
-    def test_provisional_gpio_map_consistent(self):
+    def test_newer_gpio_map_consistent(self):
         env=self.pio.split('[env:s3_uart_lcd_test]',1)[1]
-        for name,pin in [('CS',47),('RST',14),('DC',40),('MOSI',41),('SCK',42)]:
+        for name,pin in [('CS',47),('RST',14),('DC',21),('MOSI',41),('SCK',42)]:
             self.assertIn(f'-DM3R_LCD_PIN_{name}={pin}',env)
     def test_full_color_fill_and_reset(self):
         for code in ('command(0x01)', 'command(0x11)', 'command(0x29)', 'SPI.transfer(0x2C)', 'SPI.writeBytes(chunk, count)'):

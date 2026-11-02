@@ -25,9 +25,9 @@ class DragonContractTests(unittest.TestCase):
     def test_camera_disabled_and_uart(self):
         self.assertRegex(self.ini,r'(?s)\[env:s3_uart_dragon\].*?-DCAMERA_PROFILE=0')
         self.assertRegex(self.ini,r'(?s)\[env:s3_uart_dragon\].*?-DARDUINO_USB_CDC_ON_BOOT=0')
-    def test_gpio_unchanged_from_touch_baseline(self):
+    def test_gpio_matches_newer_wiring_plan(self):
         section=self.ini.split('[env:s3_uart_dragon]')[1]
-        values=['47','14','40','41','42','1','2','21']
+        values=['47','14','21','41','42','1','2','40']
         for name,value in zip(['LCD_PIN_CS','LCD_PIN_RST','LCD_PIN_DC','LCD_PIN_MOSI','LCD_PIN_SCK','TOUCH_PIN_SDA','TOUCH_PIN_SCL','TOUCH_PIN_RST'],values):
             self.assertIn('-DM3R_'+name+'='+value,section)
     def test_guard_mode(self):

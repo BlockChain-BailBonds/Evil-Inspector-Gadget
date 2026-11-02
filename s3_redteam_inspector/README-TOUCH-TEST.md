@@ -6,12 +6,12 @@
 
 ## Power OFF before adding three wires
 
-Keep the **seven working LCD wires** exactly as tested: power VCC/GND, LCD_CS->47, LCD_RST->14, LCD_RS->40, MOSI->41, SCK->42. The bare LCD's numbered 14-pin header is labeled right-to-left when its printed text is upright (VCC pin 1 far right; SD_CS pin 14 far left).
+Use the newer confirmed wiring plan: power VCC/GND, LCD_CS->47, LCD_RST->14, LCD_RS->21, MOSI->41, SCK->42. The bare LCD's numbered 14-pin header is labeled right-to-left when its printed text is upright (VCC pin 1 far right; SD_CS pin 14 far left).
 
 | TFT header pin | Touch label | ESP32-S3 candidate GPIO |
 |---|---|---|
 | **10** | CTP_SCL | **GPIO2** |
-| **11** | CTP_RST | **GPIO21** |
+| **11** | CTP_RST | **GPIO40** |
 | **12** | CTP_SDA | **GPIO1** |
 | 13 | CTP_INT | leave unconnected initially |
 
@@ -47,7 +47,7 @@ The script validates the manifest, 16 MiB size, SHA256 and S3 ROM ID, then requi
 1. `HELP`, `STATUS`, `LCD TEST` (confirm color bars still work).
 2. `TOUCH STATUS` (shows GPIOs, no I²C yet).
 3. `TOUCH PROBE` (non-resetting probe of I²C address 0x38).
-4. `TOUCH INIT` (explicitly pulses touch RST GPIO21, reads vendor/chip IDs; should print `ACK=YES`).
+4. `TOUCH INIT` (explicitly pulses touch RST GPIO40, reads vendor/chip IDs; should print `ACK=YES`).
 5. `TOUCH READ` (tap/hold the glass while sending it) or `TOUCH TEST` (nonblocking 30 s test; clears LCD to black, draws four corner markers, prints raw/mapped touch events and white dots). `TOUCH STOP` ends test.
 6. `TOUCH ROTATE 0`, `TOUCH ROTATE 1`, `TOUCH ROTATE 2`, `TOUCH ROTATE 3` adjusts *touch coordinate transform only* if a dot appears mirrored or rotated. The LCD orientation is never changed by these commands.
 

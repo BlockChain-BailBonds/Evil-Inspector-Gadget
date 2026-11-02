@@ -1,0 +1,40 @@
+{
+  "artifact": "firmware.bin",
+  "environment": "s3_uart_inspector",
+  "target": "ESP32-S3 N16R8",
+  "framework": "Arduino ESP32 2.0.14",
+  "platform": "espressif32@6.5.0",
+  "application_offset": "0x10000",
+  "application_partition_end": "0x410000",
+  "size_bytes": 1656608,
+  "sha256": "8c815968b813303b4ff362df49136a9a84acf0da31a98199a52103f8cc84869f",
+  "build": {
+    "flash_size": "16MB",
+    "flash_mode": "qio",
+    "memory_type": "qio_opi",
+    "psram_flag": true,
+    "camera_profile": 0,
+    "usb_cdc_on_boot": 0
+  },
+  "pins": {
+    "lcd_cs": 47,
+    "lcd_rst": 14,
+    "lcd_dc": 21,
+    "lcd_mosi": 41,
+    "lcd_sck": 42,
+    "touch_sda": 1,
+    "touch_scl": 2,
+    "touch_rst": 40,
+    "touch_int": null
+  },
+  "validation": {
+    "host_tests_passed": 58,
+    "compile_succeeded": true,
+    "write_offset": "0x10000",
+    "on_device_md5": "d028bca1cb0e1f4a3f8b2ed5f074a5bb",
+    "on_device_md5_verified": true,
+    "post_boot_sentinel": "EIG918|1|STAT",
+    "physical_display_verified": false,
+    "physical_touch_verified": false
+  }
+}

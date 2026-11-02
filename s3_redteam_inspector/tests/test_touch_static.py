@@ -25,10 +25,10 @@ class TouchTests(unittest.TestCase):
     def test_camera_disabled_and_pins_disjoint(self):
         env=self.pio.split('[env:s3_uart_touch_test]',1)[1]
         self.assertIn('-DCAMERA_PROFILE=0',env)
-        lcd=[47,14,40,41,42]
-        touch=[1,2,21]
+        lcd=[47,14,21,41,42]
+        touch=[1,2,40]
         self.assertFalse(set(lcd).intersection(touch))
-        for name,value in [('SDA',1),('SCL',2),('RST',21)]:
+        for name,value in [('SDA',1),('SCL',2),('RST',40)]:
             self.assertIn(f'-DM3R_TOUCH_PIN_{name}={value}',env)
         self.assertIn('Touch GPIOs must not overlap',self.touch)
     def test_focaltech_7bit_address_and_regs(self):
