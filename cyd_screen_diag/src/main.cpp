@@ -2,7 +2,7 @@
 #include <SPI.h>
 #include <TFT_eSPI.h>
 
-static constexpr int BacklightPin = 21;
+static constexpr int BacklightPin = 27;
 static TFT_eSPI display;
 static const uint16_t colors[] = {TFT_RED, TFT_GREEN, TFT_BLUE, TFT_WHITE};
 static const char *labels[] = {"RED", "GREEN", "BLUE", "WHITE"};
@@ -18,7 +18,7 @@ static void showPhase() {
   display.setTextColor(i == 3 ? TFT_BLACK : TFT_WHITE, colors[i]);
   display.drawString("918 BACKLIGHT TEST", display.width() / 2, display.height() / 2 - 15, 2);
   display.drawString(labels[i], display.width() / 2, display.height() / 2 + 15, 4);
-  Serial.printf("DIAG SCREEN phase=%u color=%s width=%d height=%d backlight_pin=21 level=%s millis=%lu\n",
+  Serial.printf("DIAG SCREEN phase=%u color=%s width=%d height=%d backlight_pin=27 level=%s millis=%lu\n",
                 phase, labels[i], display.width(), display.height(), backlightHigh ? "HIGH" : "LOW",
                 static_cast<unsigned long>(millis()));
   phase++;
@@ -27,10 +27,10 @@ static void showPhase() {
 void setup() {
   Serial.begin(115200);
   delay(250);
-  Serial.println("DIAG START target=classic-esp32 panel=ILI9341 expected=240x320");
+  Serial.println("DIAG START target=classic-esp32 panel=ST7796S expected=320x480");
   pinMode(BacklightPin, OUTPUT);
   digitalWrite(BacklightPin, HIGH);
-  Serial.println("DIAG BACKLIGHT pin=21 HIGH/LOW cycle enabled");
+  Serial.println("DIAG BACKLIGHT pin=27 HIGH/LOW cycle enabled");
   display.init();
   Serial.println("DIAG TFT_INIT returned");
   display.setRotation(1);
