@@ -1,3 +1,5 @@
+> **v1.2.0 UART1 bidirectional candidate (feature branch):** The current Flipper-TX integration uses a dedicated UART1 connection, not the legacy UART0 RX-only wiring below. Read [README-FLIPPER-DUPLEX.md](README-FLIPPER-DUPLEX.md) before wiring. This branch is source-only and electrically unverified; do not flash without guarded validation. The previous v1.1 binary remains a rollback artifact.
+
 # 918 Technologies Evil Inspector Gadget — S3 + Flipper GPIO FAP (v1.1.0)
 
 **Device roles:** The ESP32-S3 N16R8 runs the 320×480 Evil Inspector Gadget dashboard on the proven ST7796S + FT6336U. The Flipper Zero runs a separate EXTERNAL FAP, displaying a monochrome image asset and live UART telemetry from the S3. The S3 camera remains disabled. Stock Flipper firmware need not be replaced.
