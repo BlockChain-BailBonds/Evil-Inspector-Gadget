@@ -437,7 +437,7 @@ void handle(String command) {
   else if (command.startsWith("LOG ")) logCommand(command);
   else Serial.println("ERROR UNKNOWN COMMAND; send HELP");
 }
-}
+
 // Independent, bounded UART1 command protocol (never use CH340 UART0 for Flipper RX).
 // Accepted frames: EIG918|1|CMD|PING, STATUS, HOME, WIFI, BLE.
 // Wireless scans are passive; no Flipper RF/IR action is proxied.
@@ -512,6 +512,8 @@ void serviceFlipperLink() {
     }
     flipperInput[flipperLength++] = c;
   }
+}
+
 }
 
 #if defined(M3R_DRAGON_ENABLED) && M3R_DRAGON_ENABLED
