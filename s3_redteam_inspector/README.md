@@ -1,3 +1,5 @@
+> **v1.2.0 full-duplex Flipper candidate:** See [../README-FLIPPER-DUPLEX.md](../README-FLIPPER-DUPLEX.md). This feature branch uses UART1 GPIO3/GPIO48 and CTP_RST=-1 with a hardware pull-up, while the previous firmware and source hash manifest describe the original v1.1 release. Existing stored dist firmware is NOT the newly compiled v1.2 application.
+
 # 918 Technologies — RedTeam Dragon S3 v1.0.8
 
 **CURRENT FIRMWARE SOURCE**: Read [README-DRAGON.md](README-DRAGON.md) for the branded 4-inch dashboard build, guarded application flash, diagnostics, and v1.0.7 rollback.
