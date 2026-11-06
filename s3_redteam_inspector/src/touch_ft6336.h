@@ -123,12 +123,17 @@ inline void status(Print &out) {
 inline void init(Print &out) {
   testActive = false;
   startBus();
-  // RST low pulse is explicit and never happens in setup().
+  // RST=-1 requires an external pull-up to 3.3V.
+  // Never drive GPIO40 in this profile; it is SDMMC D0.
+#if M3R_TOUCH_PIN_RST >= 0
   pinMode(M3R_TOUCH_PIN_RST, OUTPUT);
   digitalWrite(M3R_TOUCH_PIN_RST, LOW);
   delay(15);
   digitalWrite(M3R_TOUCH_PIN_RST, HIGH);
   delay(250);
+#else
+  delay(100);
+#endif
   controllerReady = probe();
   if (!controllerReady) {
     out.println("TOUCH INIT FAIL no_i2c_ack=0x38 check GND/SCL/SDA/RST and board pin routing");

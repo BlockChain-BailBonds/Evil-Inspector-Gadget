@@ -182,7 +182,7 @@ inline void drawStatus(){
   information(221,"PSRAM",String(ESP.getPsramSize()/1024/1024)+" MiB");
   information(272,"UPTIME",String(millis()/1000)+" seconds");
   information(323,"SCAN CACHE",String(wifiResults())+" WIFI / "+String(bleResults())+" BLE");
-  information(374,"FLIPPER LINK","UART0 TX ONLY / 115200 / GPIO",ORANGE);
+  information(374,"FLIPPER LINK","UART1 TX+RX / 115200",ORANGE);
   footer("LIVE DEVICE METRICS");
 }
 // ST7796S is left in the proven 480x320 landscape SPI mode. Rotate the

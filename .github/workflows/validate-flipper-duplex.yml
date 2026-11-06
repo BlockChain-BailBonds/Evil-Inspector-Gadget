@@ -1,0 +1,44 @@
+name: Validate 918 Flipper Full-Duplex Protocol
+on:
+  push:
+    branches:
+      - feature/flipper-full-duplex-uart1
+  pull_request:
+    paths:
+      - 's3_redteam_inspector/**'
+      - 'flipper_fap/**'
+      - 'test_project.py'
+      - 'test_gpio_integration.py'
+      - 'tests/**'
+      - 'README-FLIPPER-DUPLEX.md'
+      - '.github/workflows/validate-flipper-duplex.yml'
+jobs:
+  host-contracts:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test dependencies
+        run: python3 -m pip install 'Pillow==11.3.0'
+      - name: Run all host regression tests
+        run: sh test_all.sh
+      - name: Generate branch-specific source provenance
+        run: |
+          mkdir -p .host-build/evidence
+          sha256sum \
+            s3_redteam_inspector/platformio.ini \
+            s3_redteam_inspector/src/main.cpp \
+            s3_redteam_inspector/src/touch_ft6336.h \
+            s3_redteam_inspector/src/inspector_ui.h \
+            s3_redteam_inspector/tests/test_flipper_duplex_static.py \
+            flipper_fap/inspector_gadget/redteam_dragon.c \
+            README-FLIPPER-DUPLEX.md \
+            > .host-build/evidence/duplex-source-sha256.txt
+          git rev-parse HEAD > .host-build/evidence/git-commit.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eig-duplex-source-evidence
+          path: .host-build/evidence/*
+          if-no-files-found: error

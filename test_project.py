@@ -23,8 +23,8 @@ assert 'INSPECTOR START' in ui
 fap_src=(fap/'redteam_dragon.c').read_text()
 assert 'canvas_draw_xbm' in fap_src
 assert '#include "inspector_assets.h"' in fap_src
-assert 'furi_hal_serial_disable_direction(app->serial, FuriHalSerialDirectionTx)' in fap_src
-assert 'furi_hal_serial_tx(' not in fap_src
+assert 'furi_hal_serial_enable_direction(app->serial, FuriHalSerialDirectionTx)' in fap_src
+assert 'furi_hal_serial_tx(' in fap_src
 assert 'loader_enqueue_launch' in fap_src
 assert 'flipper_uart' not in fap_src
 b=(fap/'inspector_assets.h').read_text()
@@ -32,4 +32,4 @@ assert b.count('0x')==128*64//8
 assert Image.open(fap/'preview_128x64.png').size==(128,64)
 assert Image.open(fap/'icon.png').size==(10,10)
 subprocess.run([sys.executable,str(root/'flipper_firmware_overlay/test_overlay.py')],check=True)
-print('PASS: S3 RGB565 size+flash wiring; firmware command routing; FAP XBM asset; UART0 receive-only safety; custom firmware overlay')
+print('PASS: S3 RGB565 size+flash wiring; firmware command routing; FAP XBM asset; UART1 bidirectional GPIO safety; custom firmware overlay')
