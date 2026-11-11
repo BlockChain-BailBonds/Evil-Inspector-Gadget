@@ -567,7 +567,9 @@ void setup() {
   status();
   printHelp();
 #if defined(M3R_DRAGON_ENABLED) && M3R_DRAGON_ENABLED
-  redteam_dragon::start();  // Existing v1.0.8 LCD, touch, and radio stack retained.
+  // Recovery-safe boot: a blocked peripheral bus must not prevent the USB
+  // console and Flipper UART service loop from becoming available.
+  Serial.println("DRAGON SAFE_BOOT UI=OFF; test LCD INIT and TOUCH INIT, then DRAGON START");
 #endif
   // Flipper UART1 is physically independent of the USB-UART0 CH340 bridge.
   flipperSerial.println("EIG918|1|HELLO|brand=918|app=INSPECTOR|mode=FULL_DUPLEX");
