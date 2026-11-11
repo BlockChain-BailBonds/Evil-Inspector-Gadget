@@ -243,7 +243,9 @@ inline void start(){
   }
   mermaid_lcd::initialize();
   if(!mermaid_touch::controllerReady)mermaid_touch::init(Serial);
-  if(!mermaid_touch::controllerReady){Serial.println("DRAGON ERROR TOUCH_UNAVAILABLE; USB COMMANDS AVAILABLE");return;}
+  if(!mermaid_touch::controllerReady){
+    Serial.println("DRAGON WARN TOUCH_UNAVAILABLE; UI CONTINUES WITH USB/FLIPPER CONTROL");
+  }
   enabled=true;
   touchWasDown=false;
   navigate(Page::Home);
