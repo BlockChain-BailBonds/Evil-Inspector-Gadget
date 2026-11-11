@@ -76,6 +76,10 @@ inline void sequence(uint8_t address, const uint8_t *data, size_t count) {
 }
 inline void initialize() {
   if (initialized) return;
+#ifdef M3R_LCD_PIN_BL
+  pinMode(M3R_LCD_PIN_BL, OUTPUT);
+  digitalWrite(M3R_LCD_PIN_BL, HIGH);
+#endif
   pinMode(M3R_LCD_PIN_CS, OUTPUT);
   pinMode(M3R_LCD_PIN_RST, OUTPUT);
   pinMode(M3R_LCD_PIN_DC, OUTPUT);
