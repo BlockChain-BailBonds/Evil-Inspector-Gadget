@@ -15,7 +15,7 @@ recovery session.
 | LCD CS | 47 |
 | LCD DC | 21 |
 | LCD reset | 14 |
-| LCD backlight | 27 |
+| LCD backlight | externally powered/unmanaged; never drive GPIO27 |
 | FT6336U SDA | 38 |
 | FT6336U SCL | 39 |
 | FT6336U IRQ | 40 (not driven by firmware) |
@@ -26,6 +26,20 @@ recovery session.
 The camera and SDMMC remain disabled. GPIO38/39/40 cannot simultaneously be
 used for SDMMC in this profile. GPIO7 cannot simultaneously be used for the
 alternate camera HREF signal. UART0 remains dedicated to the CH340 USB console.
+GPIO27 is reserved by the N16R8 flash/PSRAM memory interface and must not be
+configured as a backlight output; doing so caused a reproducible double
+exception followed by `TG1WDT_SYS_RST` during `LCD INIT`.
+
+## Recovery-safe startup
+
+The display and touch buses are not initialized automatically at boot. This
+keeps USB diagnostics and UART1 available if a peripheral bus is disconnected
+or held. Validate `LCD INIT` and `TOUCH INIT` separately, then issue
+`DRAGON START`.
+
+The dashboard remains available through USB and Flipper commands when the
+touch controller is absent. A failed FT6336U probe is reported as a warning and
+does not suppress screen rendering.
 
 ## Validation performed
 
