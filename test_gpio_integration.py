@@ -12,7 +12,7 @@ assert 'furi_hal_serial_enable_direction(app->serial, FuriHalSerialDirectionTx)'
 assert 'furi_hal_serial_tx(' in fap
 assert 'flipperSerial.begin(FLIPPER_BAUD, SERIAL_8N1, FLIPPER_RX_PIN, FLIPPER_TX_PIN)' in s3
 assert 'serviceFlipperLink();' in s3
-assert 'FLIPPER_RX_PIN = 3;' in s3 and 'FLIPPER_TX_PIN = 48;' in s3
+assert 'FLIPPER_RX_PIN = 3;' in s3 and 'FLIPPER_TX_PIN = 7;' in s3
 assert '-DM3R_TOUCH_PIN_RST=-1' in (root/'s3_redteam_inspector/platformio.ini').read_text()
 assert 'furi_hal_serial_async_rx_available(handle)' in fap
 flash=(root/'s3_redteam_inspector/tools/flash_inspector_after_backup.sh').read_text()
