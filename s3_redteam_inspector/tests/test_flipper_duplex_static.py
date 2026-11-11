@@ -33,7 +33,7 @@ class FlipperDuplexContract(unittest.TestCase):
         self.assertIn("-DM3R_TOUCH_PIN_SDA=38", inspector)
         self.assertIn("-DM3R_TOUCH_PIN_SCL=39", inspector)
         self.assertIn("-DM3R_TOUCH_PIN_RST=-1", inspector)
-        self.assertIn("-DM3R_LCD_PIN_BL=27", inspector)
+        self.assertNotIn("M3R_LCD_PIN_BL", inspector)
         self.assertIn("-DCAMERA_PROFILE=0", inspector)
         self.assertNotIn("-DM3R_TOUCH_PIN_RST=40", inspector)
         self.assertIn("#if M3R_TOUCH_PIN_RST >= 0", TOUCH)
