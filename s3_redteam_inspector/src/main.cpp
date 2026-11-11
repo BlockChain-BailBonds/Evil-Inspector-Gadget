@@ -56,10 +56,9 @@ bool fsReady = false;
 bool loggingEnabled = false;
 char inputLine[LINE_LIMIT];
 size_t lineLength = 0;
-// UART1 candidate physical pins: GPIO3 is strap; GPIO48 drives WS2812.
-// Hardware electrical validation REQUIRED before connecting Flipper TX.
+// Operator-verified UART1 physical pins. GPIO3 remains a boot strap input.
 constexpr int FLIPPER_RX_PIN = 3;
-constexpr int FLIPPER_TX_PIN = 48;
+constexpr int FLIPPER_TX_PIN = 7;
 constexpr uint32_t FLIPPER_BAUD = 115200;
 HardwareSerial flipperSerial(1);
 char flipperInput[64] = {};
@@ -422,7 +421,7 @@ void handle(String command) {
   else if (command == "SCAN ALL") { scanWifi(); scanBle(); }
   else if (command == "FINDINGS") findings();
   else if (command == "EXPORT") exportAll();
-  else if (command == "LINK STATUS") Serial.printf("LINK STATUS UART1_FULL_DUPLEX=YES S3_RX=%d S3_TX=%d BAUD=%lu CH340_UART0=UNTOUCHED RX_COMMANDS=%lu REJECTED=%lu GPIO3_STRAP=UNVERIFIED GPIO48_WS2812=SHARED\n",
+  else if (command == "LINK STATUS") Serial.printf("LINK STATUS UART1_FULL_DUPLEX=YES S3_RX=%d S3_TX=%d BAUD=%lu CH340_UART0=UNTOUCHED RX_COMMANDS=%lu REJECTED=%lu GPIO3_STRAP=OPERATOR_VERIFIED GPIO7_WIRED=YES\n",
         FLIPPER_RX_PIN, FLIPPER_TX_PIN, (unsigned long)FLIPPER_BAUD,
         (unsigned long)flipperCommandsReceived, (unsigned long)flipperCommandsRejected);
   else if (command == "CAM STATUS") Serial.printf("CAM STATUS ready=%s profile=%d size=%s\n", cameraReady ? "YES" : "NO", CAMERA_PROFILE, cameraSize ? "VGA" : "QVGA");
@@ -572,7 +571,7 @@ void setup() {
 #endif
   // Flipper UART1 is physically independent of the USB-UART0 CH340 bridge.
   flipperSerial.println("EIG918|1|HELLO|brand=918|app=INSPECTOR|mode=FULL_DUPLEX");
-  Serial.println("FLIPPER LINK UART1 GPIO3=RX GPIO48=TX 115200 8N1");
+  Serial.println("FLIPPER LINK UART1 GPIO3=RX GPIO7=TX 115200 8N1");
 }
 void loop() {
   static uint32_t lastLinkFrame = 0;
