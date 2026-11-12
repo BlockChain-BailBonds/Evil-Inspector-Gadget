@@ -1,59 +1,32 @@
-# 918 Technologies — Evil Inspector Gadget 1.2 / Flipper bidirectional link
+# Evil Inspector Gadget v1.2.0 — validated bidirectional UART1 and hardware map
 
-## Status and provenance
+**Status (2026-11-12):** Operator-verified on the connected GOOUUU ESP32-S3 N16R8, 4-inch ST7796S/FT6336U module and Flipper Zero. This document supersedes the earlier GPIO48, GPIO38/39 touch and external-reset assumptions in the original draft. See [hardware acceptance PR #2](https://github.com/BlockChain-BailBonds/Evil-Inspector-Gadget/pull/2) and [integration PR #1](https://github.com/BlockChain-BailBonds/Evil-Inspector-Gadget/pull/1).
 
-This is a source-only candidate implementing full-duplex 3.3 V UART between a GOOUUU ESP32-S3-CAM N16R8, its existing 4-inch ST7796S/FT6336U screen, and a Flipper Zero GPIO FAP. It was derived from the version 1.1 application already in this repository. The original `main` branch and known-good firmware must remain untouched.
+## Installed pin map
 
-**NOT hardware verified.** Neither GPIO3 strapping behavior with Flipper TX attached nor GPIO48 UART output through its onboard WS2812 load has been electrically validated. Do not connect or flash until that gate passes. App compilation and Flipper FAP compilation are separate gates.
+| Function | Display / Flipper pin | ESP32-S3 GPIO | Notes |
+| --- | --- | --- | --- |
+| LCD SCLK | display SCK 7 | GPIO42 | SPI |
+| LCD MOSI | display MOSI 6 | GPIO41 | SPI |
+| LCD CS | display CS 3 | GPIO47 | SPI |
+| LCD DC | display RS 5 | GPIO21 | SPI |
+| LCD reset | display RST 4 | GPIO14 | active LOW |
+| LCD backlight | display LED 8 | externally powered | Never drive GPIO27 on this N16R8 |
+| FT6336U I²C SDA | display CTP_SDA 12 | GPIO1 | controller address 0x38 |
+| FT6336U I²C SCL | display CTP_SCL 10 | GPIO2 | verified |
+| FT6336U reset | display CTP_RST 11 | GPIO40 | active LOW; physically traced |
+| FT6336U IRQ | display CTP_INT 13 | not connected | poll events |
+| Flipper → S3 UART1 RX | Flipper pin 13 TX | GPIO3 | 3.3 V, 115200 8N1 |
+| S3 UART1 TX → Flipper | Flipper pin 14 RX | GPIO7 | 3.3 V, 115200 8N1 |
+| Common ground | Flipper pin 8 GND | GND | do not join 5 V rails |
 
-## Signal assignments
+**Reserved / excluded:** S3 UART0 and CH340 remain dedicated to host diagnostics; never connect Flipper TX to S3 RX0 GPIO44. GPIO27 is not a backlight output on the N16R8 memory configuration. GPIO40 conflicts with SDMMC D0, GPIO7 can conflict with the optional camera profile; camera and SDMMC must remain disabled for this wiring. SPIFFS mounting is not an accepted feature of this build. Use independently powered devices and a common ground. Confirm connector orientation and logic voltage before any rewiring.
 
-| Function | 4-inch TFT pin | GOOUUU ESP32-S3 pin |
-|---|---:|---:|
-| Module supply | 1 VCC | regulated module 5V |
-| Ground | 2 GND | GND |
-| LCD select | 3 LCD_CS | GPIO47 |
-| LCD reset | 4 LCD_RST | GPIO14 |
-| LCD D/C | 5 LCD_RS | GPIO21 |
-| LCD MOSI | 6 MOSI | GPIO41 |
-| LCD clock | 7 SCK | GPIO42 |
-| Backlight | 8 LED | module default (no ESP GPIO) |
-| LCD MISO | 9 MISO | not connected |
-| Capacitive SCL | 10 CTP_SCL | GPIO2 (status LED shared, no LED software updates) |
-| Capacitive RESET | 11 CTP_RST | external 10k pull-up to 3.3V, **not GPIO40** |
-| Capacitive SDA | 12 CTP_SDA | GPIO1 |
-| Capacitive IRQ | 13 CTP_INT | not connected; polling |
-| Display microSD select | 14 SD_CS | not connected |
+## Framed, bounded UART protocol
 
-| Flipper Zero connector | GOOUUU pin | Direction |
-|---|---|---|
-| GPIO pin 13, UART TX | ESP32 GPIO3, UART1 RX | Flipper sends commands |
-| GPIO pin 14, UART RX | ESP32 GPIO48, UART1 TX | S3 sends ACK, status |
-| GPIO pin 8, GND | ESP32 GND | common ground |
+All frames are newline terminated. Allowed commands from the Flipper FAP:
 
-**Do not connect** Flipper pin 13 TX to GOOUUU GPIO44 (UART0 RX tied to CH340). Never connect 5V from Flipper to ESP GPIO, or connect the two devices' 5V rails together. Power each by its own supported USB port; share GND only. Use 3.3V logic; 115200 baud, 8N1.
-
-### Electrical gates before connecting
-
-1. Confirm the actual GOOUUU PCB header exposes GPIO3 and GPIO48 and trace pin identities from silkscreen/schematic. Never choose positions from an image without checking orientation.
-2. GPIO3 is a boot-strapping pin. The Flipper TX idle-high signal can change the sampled boot strap. Verify cold boot, reset, native USB, and CH340 recovery with Flipper physically connected **before** relying on this mapping. A series resistor alone does not guarantee an unchanged strap; isolate or buffer the Flipper TX line until after boot if needed.
-3. GPIO48 drives the onboard WS2812 RGB LED, which may blink or corrupt UART signaling. Disable all WS2812 code and scope the UART output with LED load attached. Use a buffer or a different interface if the output waveform fails.
-4. GPIO38=SDMMC CMD, GPIO39=SDMMC CLK, GPIO40=SDMMC D0. Do not run legacy touch-reset test configurations that toggle GPIO40 while using the onboard SD slot.
-5. CTP_RST must remain inactive HIGH through a suitable external pull-up (nominal 10k to 3.3V). Test FT6336U I2C ACK at 0x38, corner mappings, and repeated power cycles. There is no touch reset GPIO in this build.
-6. Camera GPIO4-18 (except 14) are reserved; **camera remains disabled** by `CAMERA_PROFILE=0` in this build. The onboard SD pins are reserved, but the new code does not claim the SD filesystem is mounted.
-7. Preserve the last physically verified LCD/touch firmware binary and a verified flash backup before any installation.
-
-If the GPIO3/48 hardware gate fails, do not force this wiring; a dedicated SPI/I2C UART bridge or a hardware-isolated serial design is required. The code does not claim a fully conflict-free physical pinout until tested.
-
-## Frame protocol
-
-S3 -> Flipper, every 2.5 s:
-```
-EIG918|1|STAT|up=10|wifi=0|ble=0
-```
-
-Flipper -> S3 on Flipper monitor key presses:
-```
+```text
 EIG918|1|CMD|PING
 EIG918|1|CMD|STATUS
 EIG918|1|CMD|HOME
@@ -61,48 +34,43 @@ EIG918|1|CMD|WIFI
 EIG918|1|CMD|BLE
 ```
 
-S3 replies:
-```
+Example acknowledgement and telemetry:
+
+```text
 EIG918|1|ACK|op=PING|result=OK
-EIG918|1|ERR|UNKNOWN_COMMAND
+EIG918|1|STAT|up=10|wifi=0|ble=0
 ```
 
-The S3 uses bounded ASCII newline-delimited input with no arbitrary command execution or shell. WIFI and BLE commands are explicit passive inventory scans; those scans block the main loop during scanning, so telemetry and responses may pause. A link timeout during a scan is not proof the physical cable failed.
+The parser limits frame length and rejects invalid or unknown commands. WIFI and BLE initiate **passive** scans; longer scans may temporarily delay telemetry. The FAP enables both HAL serial TX and RX directions before asynchronous receive, with a bounded initial frame-boundary synchronization after ownership transitions. No arbitrary command shell or remote control of native Flipper RF applications is provided.
 
-Flipper FAP monitor controls: UP=PING, DOWN=STATUS, LEFT=HOME, RIGHT=passive WIFI scan, OK=passive BLE scan, BACK=exit monitor. The native Flipper applications remain separate and run under Flipper control; this UART bridge does not launch RF transmissions or remote exploits.
+## Recorded acceptance
 
-## Build and validation (no automatic flashing)
+- Cold-booted S3 application starts the LCD dashboard without an interactive USB command.
+- FT6336U returned ACK at 0x38, vendor ID 0x11 and chip ID 0x64; physical four corners, center and Home button events were captured.
+- Flipper-issued framed BLE commands were individually received by the S3 and invoked passive scans.
+- **1,000 sequential PING/ACK round trips** completed on real devices. The stress diagnostic sent the next PING only after the previous `EIG918|1|ACK|op=PING|result=OK` response; S3 ended with `RX_COMMANDS=1000`.
+- One deliberately rejected stale boundary line (`REJECTED=1`) was recorded during Flipper expansion-service synchronization; it is not one of the 1,000 requested commands.
+- Host validation reported 62/62 Python regressions, C protocol, 16 MB partition checks, and successful PlatformIO and Flipper FAP builds.
+- The canonical FAP was restored after temporary stress testing. The accepted FAP SHA-256 reported in PR #2 is `42be121e790dcd247af7a58fc64a2928a45ebfa0e835d1794abdc339917f4baa`.
 
-S3:
+These are operator-recorded hardware acceptance results, not direct hardware tests run by GitHub Actions. See [PR #2 evidence](https://github.com/BlockChain-BailBonds/Evil-Inspector-Gadget/pull/2#issuecomment-6832230280).
+
+## Reproducible source/build checks
+
+From the repository root:
+
 ```sh
+sh test_all.sh
 cd s3_redteam_inspector
-python3 -m unittest discover -s tests -v
 pio run -e s3_uart_inspector
 sha256sum .pio/build/s3_uart_inspector/firmware.bin
-```
-
-Flipper FAP (match SDK to installed Flipper firmware):
-```sh
-cd flipper_fap/inspector_gadget
+cd ../flipper_fap/inspector_gadget
 ufbt
 find dist -type f -name '*.fap'
 ```
 
-At repository root:
-```sh
-sh test_all.sh
-```
+Builds are not flashes. Preserve the full verified 16 MiB S3 flash backup and a known-good application image. Any later S3 flash must follow `s3_redteam_inspector/docs/FLASHING-SAFETY.md` and its guarded app-only process; do not erase the bootloader, partition table or existing backups. The exact build artifact hashes can change with toolchain and source revisions and do not substitute for a device read-back.
 
-Use the repository's original **guarded app-only** flash path only after a verified full backup and known-good rollback application are present. Test USB console first, then screen colors/touch, then one-way UART1 S3-to-Flipper telemetry, then Flipper TX PING/ACK and STATUS, then HOME, then explicitly requested passive scans. A passing source test is not proof of hardware performance.
+## Historical note
 
-## Acceptance checklist
-
-- [ ] S3 build produces a valid application image and checksum.
-- [ ] Flipper FAP builds against actual firmware SDK.
-- [ ] Verified fallback binary/flash backup retained, never overwritten.
-- [ ] GPIO3 strapping and USB recovery validated with Flipper connected.
-- [ ] GPIO48 UART waveform checked with WS2812 onboard load.
-- [ ] ST7796S RGB bars and FT6336U four-corner touches verified.
-- [ ] Flipper TX -> S3 UART1 RX receives PING and S3 returns ACK.
-- [ ] 1000 bidirectional PING/ACK cycles measured with no corruption.
-- [ ] Camera remains disabled; onboard SDMMC GPIOs left untouched.
+The original draft referenced GPIO48 UART TX, GPIO38/39 I²C and an external touch-reset pull-up because those physical nets had not been traced. Subsequent direct hardware tracing and the documented recovery run established GPIO7 UART TX and GPIO1/2/40 touch for the **actual operator-built device**. Do not restore those superseded configurations. The pre-recovery text is retained in Git history for provenance.
