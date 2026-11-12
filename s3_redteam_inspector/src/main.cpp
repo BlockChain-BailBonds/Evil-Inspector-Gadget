@@ -369,7 +369,7 @@ void printHelp() {
 #endif
   Serial.println("CAM STATUS | CAM CAPTURE | CAM SIZE QVGA | CAM SIZE VGA");
   Serial.println("LCD STATUS | LCD INIT | LCD TEST | LCD RED | LCD GREEN | LCD BLUE | LCD WHITE | LCD BLACK | LCD OFF");
-  Serial.println("TOUCH STATUS | TOUCH DIAG | TOUCH ALT PROBE | TOUCH PROBE | TOUCH INIT | TOUCH READ | TOUCH TEST | TOUCH STOP | TOUCH ROTATE 0/1/2/3");
+  Serial.println("TOUCH STATUS | TOUCH DIAG | TOUCH ALT PROBE | TOUCH LEGACY RESET40 CONFIRM | TOUCH PROBE | TOUCH INIT | TOUCH READ | TOUCH TEST | TOUCH STOP | TOUCH ROTATE 0/1/2/3");
   Serial.println("LOG STATUS | LOG ON | LOG OFF | LOG DUMP | LOG CLEAR CONFIRM | LOG FORMAT CONFIRM");
   Serial.println("All cameras require explicit USB command. No Wi-Fi join, server, injection, or exploit payload.");
 }
