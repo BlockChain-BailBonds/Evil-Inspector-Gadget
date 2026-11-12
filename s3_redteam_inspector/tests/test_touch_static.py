@@ -16,6 +16,7 @@ class TouchTests(unittest.TestCase):
     def test_touch_commands_reachable(self):
         self.assertIn('cmd == "TOUCH DIAG"', self.touch)
         self.assertIn('cmd == "TOUCH ALT PROBE"', self.touch)
+        self.assertIn('cmd == "TOUCH LEGACY RESET40 CONFIRM"', self.touch)
         for s in ('TOUCH STATUS','TOUCH PROBE','TOUCH INIT','TOUCH READ','TOUCH TEST','TOUCH STOP','TOUCH ROTATE'):
             self.assertIn(s,self.touch)
         self.assertIn('mermaid_touch::handle(command, Serial)',self.main)
