@@ -64,7 +64,32 @@ struct Point { bool down; uint8_t count; uint16_t rawX; uint16_t rawY; uint16_t 
 inline void startBus() {
   if (busStarted) return;
   Wire.begin(M3R_TOUCH_PIN_SDA, M3R_TOUCH_PIN_SCL, 100000);
+  Wire.setTimeOut(50);
   busStarted = true;
+}
+inline void diagnoseBus(Print &out) {
+  // Read the verified bus without ever driving the externally managed reset or IRQ.
+  pinMode(M3R_TOUCH_PIN_SDA, INPUT_PULLUP);
+  pinMode(M3R_TOUCH_PIN_SCL, INPUT_PULLUP);
+  delay(2);
+  int sdaBefore = digitalRead(M3R_TOUCH_PIN_SDA);
+  int sclBefore = digitalRead(M3R_TOUCH_PIN_SCL);
+  out.printf("TOUCH DIAG idle_before sda=%s scl=%s\n", sdaBefore ? "HIGH" : "LOW", sclBefore ? "HIGH" : "LOW");
+  if (!sdaBefore && sclBefore) {
+    pinMode(M3R_TOUCH_PIN_SCL, OUTPUT_OPEN_DRAIN);
+    digitalWrite(M3R_TOUCH_PIN_SCL, HIGH);
+    for (uint8_t pulse = 0; pulse < 9 && !digitalRead(M3R_TOUCH_PIN_SDA); ++pulse) {
+      digitalWrite(M3R_TOUCH_PIN_SCL, LOW); delayMicroseconds(5);
+      digitalWrite(M3R_TOUCH_PIN_SCL, HIGH); delayMicroseconds(5);
+    }
+    pinMode(M3R_TOUCH_PIN_SCL, INPUT_PULLUP);
+  }
+  startBus();
+  Wire.beginTransmission(ADDRESS);
+  const uint8_t result = Wire.endTransmission();
+  out.printf("TOUCH DIAG probe=0x38 result=%u ack=%s sda=%s scl=%s reset=EXTERNAL irq=GPIO40_UNDRIVEN\n",
+    result, result == 0 ? "YES" : "NO", digitalRead(M3R_TOUCH_PIN_SDA) ? "HIGH" : "LOW",
+    digitalRead(M3R_TOUCH_PIN_SCL) ? "HIGH" : "LOW");
 }
 inline bool probe() {
   startBus();
@@ -154,6 +179,7 @@ inline void report(Print &out, const Point &point) {
 }
 inline void handle(const String &cmd, Print &out) {
   if (cmd == "TOUCH STATUS") {status(out);return;}
+  if (cmd == "TOUCH DIAG") {diagnoseBus(out);return;}
   if (cmd == "TOUCH PROBE") {
     out.println(probe() ? "TOUCH PROBE found=0x38 (ack only)" : "TOUCH PROBE missing=0x38 check SDA/SCL/VCC/GND");return;
   }
