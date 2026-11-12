@@ -567,9 +567,9 @@ void setup() {
   status();
   printHelp();
 #if defined(M3R_DRAGON_ENABLED) && M3R_DRAGON_ENABLED
-  // Recovery-safe boot: a blocked peripheral bus must not prevent the USB
-  // console and Flipper UART service loop from becoming available.
-  Serial.println("DRAGON SAFE_BOOT UI=OFF; test LCD INIT and TOUCH INIT, then DRAGON START");
+  // Display SPI is hardware-verified. Touch failure is non-fatal inside start(),
+  // so the dashboard is restored automatically after every power cycle.
+  redteam_dragon::start();
 #endif
   // Flipper UART1 is physically independent of the USB-UART0 CH340 bridge.
   flipperSerial.println("EIG918|1|HELLO|brand=918|app=INSPECTOR|mode=FULL_DUPLEX");
