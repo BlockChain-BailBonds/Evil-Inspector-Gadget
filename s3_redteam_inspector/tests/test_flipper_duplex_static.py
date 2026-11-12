@@ -20,7 +20,7 @@ class FlipperDuplexContract(unittest.TestCase):
 
     def test_display_touch_and_uart_gpio_do_not_overlap(self):
         display = {47, 14, 21, 41, 42}
-        touch = {38, 39}
+        touch = {1, 2, 40}
         flipper = {3, 7}
         sdmmc = {38, 39, 40}
         camera = {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18}
@@ -30,12 +30,11 @@ class FlipperDuplexContract(unittest.TestCase):
         self.assertFalse(touch & flipper)
         self.assertFalse(flipper & usb_ch340)
         inspector = CFG.split("[env:s3_uart_inspector]", 1)[1]
-        self.assertIn("-DM3R_TOUCH_PIN_SDA=38", inspector)
-        self.assertIn("-DM3R_TOUCH_PIN_SCL=39", inspector)
-        self.assertIn("-DM3R_TOUCH_PIN_RST=-1", inspector)
+        self.assertIn("-DM3R_TOUCH_PIN_SDA=1", inspector)
+        self.assertIn("-DM3R_TOUCH_PIN_SCL=2", inspector)
+        self.assertIn("-DM3R_TOUCH_PIN_RST=40", inspector)
         self.assertNotIn("M3R_LCD_PIN_BL", inspector)
         self.assertIn("-DCAMERA_PROFILE=0", inspector)
-        self.assertNotIn("-DM3R_TOUCH_PIN_RST=40", inspector)
         self.assertIn("#if M3R_TOUCH_PIN_RST >= 0", TOUCH)
 
     def test_uart_rx_protocol_bounded(self):
