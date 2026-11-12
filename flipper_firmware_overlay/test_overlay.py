@@ -22,7 +22,7 @@ with tempfile.TemporaryDirectory() as td:
  subprocess.run(base+['--apply'],check=True,capture_output=True)
  mp=p/'.inspector918_asset_backup/manifest.json';assert mp.exists()
  manifest=json.loads(mp.read_text());assert len(manifest['targets'])==18
- assert any(hashlib.sha256(q.read_bytes()).hexdigest()!=pre[str(q.relative_to(p))] for q in p.rglob('*.png'))
+ assert any(hashlib.sha256((p/rel).read_bytes()).hexdigest()!=digest for rel,digest in pre.items())
  # A second apply must refuse, preserving the first clean backup.
  second=subprocess.run(base+['--apply'],capture_output=True)
  assert second.returncode!=0
@@ -31,6 +31,7 @@ with tempfile.TemporaryDirectory() as td:
  assert subprocess.run(base+['--restore'],capture_output=True).returncode!=0
  target.write_bytes(save)
  subprocess.run(base+['--restore'],check=True,capture_output=True)
- after={str(q.relative_to(p)):hashlib.sha256(q.read_bytes()).hexdigest() for q in p.rglob('*.png')}
+ assert not (p/'.inspector918_asset_backup').exists()
+ after={rel:hashlib.sha256((p/rel).read_bytes()).hexdigest() for rel in pre}
  assert after==pre
 print('PASS: overlay dry-run, apply, precise asset backup, tamper rejection, restore')
