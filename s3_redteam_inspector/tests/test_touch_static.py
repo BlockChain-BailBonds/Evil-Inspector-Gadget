@@ -14,6 +14,7 @@ class TouchTests(unittest.TestCase):
         for s in ('void scanWifi()', 'void scanBle()', 'void initCamera()', 'void writeEvidence()', 'SCAN WIFI', 'SCAN BLE', 'LOG DUMP'):
             self.assertIn(s,self.main)
     def test_touch_commands_reachable(self):
+        self.assertIn('cmd == "TOUCH DIAG"', self.touch)
         for s in ('TOUCH STATUS','TOUCH PROBE','TOUCH INIT','TOUCH READ','TOUCH TEST','TOUCH STOP','TOUCH ROTATE'):
             self.assertIn(s,self.touch)
         self.assertIn('mermaid_touch::handle(command, Serial)',self.main)
