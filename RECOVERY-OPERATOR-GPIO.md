@@ -48,6 +48,10 @@ then probes only the expected FT6336U address. Hardware result on 2026-11-11:
 not respond. GPIO40 remains undriven because it is the verified IRQ wire, not a
 reset output. Resolution now requires confirming touch-controller 3.3 V power
 and the external reset/pull-up state; firmware must not guess a reset GPIO.
+The conflicting GPIO1/GPIO2 proposal was also probed temporarily without
+changing the production mapping: both lines idled HIGH, but address `0x38`
+returned `result=2 ack=NO`. Neither documented I2C profile reaches a responding
+controller.
 
 ## Validation performed
 
