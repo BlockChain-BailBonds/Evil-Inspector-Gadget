@@ -10,6 +10,11 @@ on:
       - RELEASE_NOTES_v1.2.0.md
       - 's3_redteam_inspector/**'
       - 'flipper_fap/**'
+      - 'flipper_firmware_overlay/**'
+      - 'tests/**'
+      - test_all.sh
+      - test_project.py
+      - test_gpio_integration.py
       - '.github/workflows/release-v1.2.0.yml'
   workflow_dispatch:
 
