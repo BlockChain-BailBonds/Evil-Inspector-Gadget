@@ -2,6 +2,11 @@
 
 # 918 Technologies Evil Inspector Gadget — S3 + Flipper GPIO FAP (v1.1.0)
 
+The isolated operator-wiring recovery profile is documented in
+[`RECOVERY-OPERATOR-GPIO.md`](RECOVERY-OPERATOR-GPIO.md). It preserves the
+original main and draft PR histories while matching the confirmed physical
+GPIO routing.
+
 **Device roles:** The ESP32-S3 N16R8 runs the 320×480 Evil Inspector Gadget dashboard on the proven ST7796S + FT6336U. The Flipper Zero runs a separate EXTERNAL FAP, displaying a monochrome image asset and live UART telemetry from the S3. The S3 camera remains disabled. Stock Flipper firmware need not be replaced.
 
 **Hardware verified previously:** S3 boot/USB, passive Wi-Fi, ST7796S colors, FT6336U touch and v1.0.8 Dragon dashboard on the physical screen. **This v1.1.0 inspector firmware and companion FAP have not been tested on either device.**
