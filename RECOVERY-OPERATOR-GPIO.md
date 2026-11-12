@@ -16,15 +16,15 @@ recovery session.
 | LCD DC | 21 |
 | LCD reset | 14 |
 | LCD backlight | externally powered/unmanaged; never drive GPIO27 |
-| FT6336U SDA | 38 |
-| FT6336U SCL | 39 |
-| FT6336U IRQ | 40 (not driven by firmware) |
-| FT6336U reset | externally managed; firmware uses `-1` |
+| FT6336U SDA | 1 |
+| FT6336U SCL | 2 |
+| FT6336U reset | 40 (active LOW) |
+| FT6336U IRQ | not connected; polling |
 | Flipper TX to S3 UART1 RX | 3 |
 | S3 UART1 TX to Flipper RX | 7 |
 
-The camera and SDMMC remain disabled. GPIO38/39/40 cannot simultaneously be
-used for SDMMC in this profile. GPIO7 cannot simultaneously be used for the
+The camera and SDMMC remain disabled. GPIO40 cannot simultaneously be used for
+SDMMC D0 in this profile. GPIO7 cannot simultaneously be used for the
 alternate camera HREF signal. UART0 remains dedicated to the CH340 USB console.
 GPIO27 is reserved by the N16R8 flash/PSRAM memory interface and must not be
 configured as a backlight output; doing so caused a reproducible double
@@ -32,9 +32,9 @@ exception followed by `TG1WDT_SYS_RST` during `LCD INIT`.
 
 ## Startup behavior
 
-The hardware-verified display starts the Inspector dashboard automatically
-after every boot. Touch initialization failure is non-fatal, preserving USB and
-Flipper control while the FT6336U electrical/reset issue is diagnosed.
+The hardware-verified display and FT6336U touch controller start automatically
+after every boot. Touch initialization failure remains non-fatal so USB and
+Flipper recovery stay available.
 
 The dashboard remains available through USB and Flipper commands when the
 touch controller is absent. A failed FT6336U probe is reported as a warning and
@@ -44,17 +44,15 @@ does not suppress screen rendering.
 
 The diagnostic now always ends any prior `Wire` instance, reads idle levels,
 successfully reinitializes I2C, and only then probes. Corrected hardware result
-on 2026-11-12: `idle_sda=1 idle_scl=1 addr38=2 ack38=NO addr48=2 ack48=NO`.
+before reset recovery: `idle_sda=1 idle_scl=1 addr38=2 ack38=NO addr48=2 ack48=NO`.
 This supersedes the earlier result 5 timeout, which was affected by defective
-diagnostic reinitialization. The bus is not held low, but the controller still
-does not respond. GPIO40 remains undriven because it is the verified IRQ wire,
-not a reset output. Resolution now requires confirming touch-controller 3.3 V
-power and the external reset/pull-up state; firmware must not guess a reset
-GPIO.
-The conflicting GPIO1/GPIO2 proposal was also probed temporarily without
-changing the production mapping: both lines idled HIGH, but address `0x38`
-returned `result=2 ack=NO`. Neither documented I2C profile reaches a responding
-controller.
+diagnostic reinitialization. Subsequent physical tracing confirmed display pin
+11 CTP_RST is connected
+to GPIO40. The historical reset sequence (LOW 15 ms, HIGH, wait 250 ms) with
+SDA GPIO1 and SCL GPIO2 produced `result=0 ack=YES` at `0x38`. A physical touch
+was then recorded at `x=80 y=230` and activated the Home-page Wi-Fi control.
+After installing the permanent mapping, a power-on boot reported
+`ACK=YES vendor_id=0x11 chip_id=0x64` before starting the Home screen.
 
 ## Validation performed
 
@@ -62,7 +60,7 @@ controller.
 - `s3_uart_inspector` compiled with PlatformIO 6.2.0, Espressif platform 6.5.0,
   and Arduino ESP32 2.0.14.
 - Application SHA-256:
-  `b14e466cef2ac299c01030726f354e35774008679c87f90e1028269f0af927c6`.
+  `be823217b920f39a6f53ee342bc2620177d23a3fa3a81f10758a5434e2fd940c`.
 - Flipper FAP compiled against target 7 / API 88.2.
 - FAP SHA-256:
   `323113e55d3c5f19ea572dd679aea5b25eb7768601cb539c4fa9ec65767669dd`.
