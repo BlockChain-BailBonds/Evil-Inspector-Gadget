@@ -116,6 +116,37 @@ inline void diagnoseAlternatePins(Print &out) {
   Wire.setTimeOut(50);
   busStarted = true;
 }
+inline void legacyReset40Probe(Print &out) {
+  // Explicit recovery only: reproduces the repository's former known-good
+  // CTP_SDA=GPIO1, CTP_SCL=GPIO2, CTP_RST=GPIO40 sequence. SDMMC is disabled.
+  Wire.end();
+  busStarted = false;
+  controllerReady = false;
+  pinMode(40, OUTPUT);
+  digitalWrite(40, LOW);
+  delay(15);
+  digitalWrite(40, HIGH);
+  delay(250);
+  const bool started = Wire.begin(1, 2, 100000);
+  if (!started) {
+    pinMode(40, INPUT);
+    out.println("TOUCH LEGACY ERROR I2C_BEGIN_FAILED");
+    return;
+  }
+  Wire.setTimeOut(50);
+  busStarted = true;
+  Wire.beginTransmission(ADDRESS);
+  const uint8_t result = Wire.endTransmission(true);
+  controllerReady = result == 0;
+  out.printf("TOUCH LEGACY reset=GPIO40 sda=1 scl=2 addr=0x38 result=%u ack=%s\n",
+    result, controllerReady ? "YES" : "NO");
+  if (!controllerReady) {
+    Wire.end();
+    busStarted = false;
+    pinMode(40, INPUT);
+    startBus();
+  }
+}
 inline bool probe() {
   startBus();
   Wire.beginTransmission(ADDRESS);
@@ -206,6 +237,7 @@ inline void handle(const String &cmd, Print &out) {
   if (cmd == "TOUCH STATUS") {status(out);return;}
   if (cmd == "TOUCH DIAG") {diagnoseBus(out);return;}
   if (cmd == "TOUCH ALT PROBE") {diagnoseAlternatePins(out);return;}
+  if (cmd == "TOUCH LEGACY RESET40 CONFIRM") {legacyReset40Probe(out);return;}
   if (cmd == "TOUCH PROBE") {
     out.println(probe() ? "TOUCH PROBE found=0x38 (ack only)" : "TOUCH PROBE missing=0x38 check SDA/SCL/VCC/GND");return;
   }
