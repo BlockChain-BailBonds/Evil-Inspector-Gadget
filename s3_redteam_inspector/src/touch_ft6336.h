@@ -68,28 +68,33 @@ inline void startBus() {
   busStarted = true;
 }
 inline void diagnoseBus(Print &out) {
-  // Read the verified bus without ever driving the externally managed reset or IRQ.
-  pinMode(M3R_TOUCH_PIN_SDA, INPUT_PULLUP);
-  pinMode(M3R_TOUCH_PIN_SCL, INPUT_PULLUP);
-  delay(2);
-  int sdaBefore = digitalRead(M3R_TOUCH_PIN_SDA);
-  int sclBefore = digitalRead(M3R_TOUCH_PIN_SCL);
-  out.printf("TOUCH DIAG idle_before sda=%s scl=%s\n", sdaBefore ? "HIGH" : "LOW", sclBefore ? "HIGH" : "LOW");
-  if (!sdaBefore && sclBefore) {
-    pinMode(M3R_TOUCH_PIN_SCL, OUTPUT_OPEN_DRAIN);
-    digitalWrite(M3R_TOUCH_PIN_SCL, HIGH);
-    for (uint8_t pulse = 0; pulse < 9 && !digitalRead(M3R_TOUCH_PIN_SDA); ++pulse) {
-      digitalWrite(M3R_TOUCH_PIN_SCL, LOW); delayMicroseconds(5);
-      digitalWrite(M3R_TOUCH_PIN_SCL, HIGH); delayMicroseconds(5);
-    }
-    pinMode(M3R_TOUCH_PIN_SCL, INPUT_PULLUP);
+  if (busStarted) {
+    Wire.end();
+    busStarted = false;
   }
-  startBus();
-  Wire.beginTransmission(ADDRESS);
-  const uint8_t result = Wire.endTransmission();
-  out.printf("TOUCH DIAG probe=0x38 result=%u ack=%s sda=%s scl=%s reset=EXTERNAL irq=GPIO40_UNDRIVEN\n",
-    result, result == 0 ? "YES" : "NO", digitalRead(M3R_TOUCH_PIN_SDA) ? "HIGH" : "LOW",
-    digitalRead(M3R_TOUCH_PIN_SCL) ? "HIGH" : "LOW");
+
+  // Inspect idle levels before activating I2C. HIGH does not prove continuity.
+  pinMode(M3R_TOUCH_PIN_SDA, INPUT);
+  pinMode(M3R_TOUCH_PIN_SCL, INPUT);
+  delay(2);
+  const int sda = digitalRead(M3R_TOUCH_PIN_SDA);
+  const int scl = digitalRead(M3R_TOUCH_PIN_SCL);
+  out.printf("TOUCH DIAG idle_sda=%d idle_scl=%d\n", sda, scl);
+
+  const bool started = Wire.begin(M3R_TOUCH_PIN_SDA, M3R_TOUCH_PIN_SCL, 100000);
+  if (!started) {
+    out.println("TOUCH DIAG ERROR I2C_BEGIN_FAILED");
+    return;
+  }
+  Wire.setTimeOut(50);
+  busStarted = true;
+
+  Wire.beginTransmission(0x38);
+  const uint8_t result38 = Wire.endTransmission(true);
+  Wire.beginTransmission(0x48);
+  const uint8_t result48 = Wire.endTransmission(true);
+  out.printf("TOUCH DIAG addr38=%u ack38=%s addr48=%u ack48=%s rst=EXTERNAL irq=GPIO40_UNDRIVEN\n",
+    result38, result38 == 0 ? "YES" : "NO", result48, result48 == 0 ? "YES" : "NO");
 }
 inline void diagnoseAlternatePins(Print &out) {
   constexpr int alternateSda = 1;
