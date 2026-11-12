@@ -40,6 +40,15 @@ The dashboard remains available through USB and Flipper commands when the
 touch controller is absent. A failed FT6336U probe is reported as a warning and
 does not suppress screen rendering.
 
+## Touch diagnostic result
+
+The installed bounded diagnostic reads GPIO38 SDA and GPIO39 SCL HIGH at idle,
+then probes only the expected FT6336U address. Hardware result on 2026-11-11:
+`probe=0x38 result=5 ack=NO`. The bus is not held low, but the controller does
+not respond. GPIO40 remains undriven because it is the verified IRQ wire, not a
+reset output. Resolution now requires confirming touch-controller 3.3 V power
+and the external reset/pull-up state; firmware must not guess a reset GPIO.
+
 ## Validation performed
 
 - 62 Python regression tests passed.
