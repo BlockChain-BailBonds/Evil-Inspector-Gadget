@@ -1,13 +1,27 @@
-> **v1.2.0 hardware-verified recovery (2026-11-12):** The current Flipper link uses dedicated UART1 at 115200 8N1: S3 RX GPIO3 from Flipper pin 13 TX, S3 TX GPIO7 to Flipper pin 14 RX, and common ground. LCD, FT6336U touch, USB recovery, both UART directions, and 1,000 sequential PING/ACK exchanges passed on the operator's hardware. The previous v1.1 binary and verified 16 MiB backup remain rollback artifacts.
+# 918 Technologies — Evil Inspector Gadget v1.2.0
 
-# 918 Technologies Evil Inspector Gadget — S3 + Flipper GPIO FAP (v1.1.0)
+**Release baseline:** November 12, 2026. **Status: hardware-validated for the bounded Inspector features below** on the operator's GOOUUU ESP32-S3 N16R8 with 4-inch ST7796S/FT6336U display and Flipper Zero. This is the current bidirectional UART1 implementation, not the superseded one-way UART0 v1.1 configuration.
 
-The isolated operator-wiring recovery profile is documented in
-[`RECOVERY-OPERATOR-GPIO.md`](RECOVERY-OPERATOR-GPIO.md). It preserves the
-original main and draft PR histories while matching the confirmed physical
-GPIO routing.
+## Validated hardware and behavior
 
-**Device roles:** The ESP32-S3 N16R8 runs the 320×480 Evil Inspector Gadget dashboard on the proven ST7796S + FT6336U. The Flipper Zero runs a separate EXTERNAL FAP, displaying a monochrome image asset and live UART telemetry from the S3. The S3 camera remains disabled. Stock Flipper firmware need not be replaced.
+| Subsystem | Current configuration | Validation evidence |
+| --- | --- | --- |
+| ESP32-S3 boot and recovery | 16 MB flash / 8 MB OPI PSRAM; CH340 USB/UART0 untouched | Power-on display and USB boot logs reported |
+| ST7796S LCD | SCLK GPIO42, MOSI GPIO41, CS GPIO47, DC GPIO21, RESET GPIO14; backlight externally powered | Dashboard starts after cold boot; screen rendering accepted |
+| FT6336U touch | SDA GPIO1, SCL GPIO2, active-low reset GPIO40; IRQ unwired (polling); I²C address 0x38 | Controller ACK; vendor 0x11 / chip 0x64; four corners, center, Home control |
+| Flipper TX → S3 RX | Flipper header pin 13 → ESP32-S3 UART1 GPIO3 | Framed passive BLE commands and 1,000 PING commands received |
+| S3 TX → Flipper RX | ESP32-S3 UART1 GPIO7 → Flipper header pin 14 | 1,000 corresponding ACK frames parsed by the Flipper |
+| UART electrical settings | Common GND, separate USB power; 3.3 V logic, 115200 8N1 | Bidirectional, sequential PING/ACK acceptance |
+| Host regressions / builds | Python, C parser, partition validation, PlatformIO, Flipper uFBT | 62/62 Python tests and successful build workflows recorded |
+| Passive inventory | Wi-Fi/BLE scans initiated by explicitly bounded commands | Operator-reported device tests |
+| Camera and SDMMC | Disabled in the inspected firmware profile | Not included in v1.2.0 acceptance |
+| SPIFFS persistence | Mount not validated | Not a v1.2.0 feature or acceptance claim |
+
+**Acceptance provenance:** [PR #2 — GPIO recovery and hardware run](https://github.com/BlockChain-BailBonds/Evil-Inspector-Gadget/pull/2) documents physical touch calibration and the completed 1,000 sequential PING/ACK test on November 12, 2026. [PR #1](https://github.com/BlockChain-BailBonds/Evil-Inspector-Gadget/pull/1) contains the integrated source changes and CI validation. These are operator-captured hardware results, not hardware tests performed by GitHub-hosted CI.
+
+**Validated command scope:** The Flipper FAP sends `PING`, `STATUS`, `HOME`, passive `WIFI` inventory and passive `BLE` inventory to the S3. The S3 replies with framed `ACK`, status and bounded errors. Native Flipper Sub-GHz, NFC, RFID, infrared and iButton applications remain independent and require local user interaction; this bridge does not remotely run them. It is not an arbitrary command-execution interface.
+
+**Physical wiring safety:** Do **not** attach Flipper TX to S3 UART0/CH340 RX (GPIO44), drive GPIO27 as LCD backlight, drive 5 V into an S3 GPIO, join the devices' 5 V rails, or enable SDMMC/camera pins conflicting with GPIO40/GPIO7. Keep the original full 16 MiB verified S3 backup and previously working application image for rollback. See [operator recovery wiring](RECOVERY-OPERATOR-GPIO.md) and [UART1 protocol guide](README-FLIPPER-DUPLEX.md).
 
 ## Copy-ready Codex automation prompt
 
@@ -122,13 +136,9 @@ step and a verified recovery image.
 
 **Hardware verified:** S3 boot/USB, passive Wi-Fi/BLE inventory, ST7796S rendering, FT6336U touch, dashboard startup, dedicated UART1 in both directions, and 1,000 sequential PING/ACK exchanges. The v1.1 UART0 text below is retained only as historical rollback documentation.
 
-## Legacy v1.1 UART0 constraint (not the current wiring)
+## Historical v1.1 UART0 design — superseded
 
-CH340 on the S3 is electrically connected to ESP32-S3 RX0/TX0; this is also the Samsung USB console at 115200 baud. The Flipper must **not drive S3 RX0** while the CH340 is connected: two push-pull transmitters can conflict electrically even if no USB commands are being sent. Software cannot eliminate this shared-wire risk.
-
-The former one-way v1.1 design disconnected Flipper TX and monitored S3 UART0 TX only. Do not reconstruct that layout over the current verified UART1 wiring. The current mapping is GPIO3/GPIO7 as stated at the top of this README and in `RECOVERY-OPERATOR-GPIO.md`.
-
-This provides a real GPIO/FAP *telemetry* connection: S3 emits `EIG918|1|STAT|up=<seconds>|wifi=<count>|ble=<count>` every 2.5s. Flipper validates each frame, shows `S3 LIVE W# B#` on the menu and prints the last three lines in its serial monitor (hold OK). The Flipper launches native Sub-GHz, NFC, RFID, Infrared, iButton and Bluetooth screens locally after user confirmation. **No Flipper-to-S3 commands** are sent; Flipper cannot remotely trigger S3 scans in the RX-only mode. For two-way remote control, reroute the link to dedicated S3 UART1 pins confirmed free and rewire both boards; do not attempt it on the shared CH340 UART0 line.
+The prior v1.1 prototype used one-way S3 UART0 telemetry because S3 RX0 was shared with the CH340 USB adapter. **Do not use the old v1.1 wiring or follow the former one-way instructions on the completed v1.2.0 build.** The correct, tested link is separate UART1 on GPIO3 (RX) and GPIO7 (TX), with USB/UART0 reserved for diagnostics. Historical documentation and code remain accessible in the Git history (pre-v1.2.0 main commit `5a2f8ee60e391f55d07f1fbdf4da94269e2c5bb8`).
 
 ## S3 installation (Samsung Termux)
 
@@ -172,6 +182,10 @@ The Flipper is a monochrome 128×64 screen, so it uses a 1-bit derived Inspector
 - `flipper_fap/inspector_gadget/preview_128x64.png`: visible monochrome FAP art.
 - `flipper_firmware_overlay/`: optional asset-only Flipper source-tree overlay; **not necessary for S3/FAP link** and does not replace Flipper radio services.
 
-## Testing limits
+## Verification scope and release notes
 
-Host tests verify image size/contents, serial telemetry format, parser edge cases, UI wiring, bounded UART transmission, and both HAL directions. Physical acceptance additionally requires the actual devices; the 2026-11-12 baseline passed 1,000 sequential PING/ACK rounds. Camera profile remains 0.
+The completed hardware acceptance is reported in the PR #2 operator logs: 1,000 sequential PING/ACK round trips, with the next PING transmitted only after the previous ACK was parsed. A single deliberate stale-line synchronization rejection was recorded separately and not counted as a failed PING. The Flipper receive-direction correction enables `FuriHalSerialDirectionRx` before asynchronous reception.
+
+GitHub Actions verifies source tests and firmware/FAP compilation; it **does not** physically test an attached ESP32-S3 or Flipper. Touch, UART and startup acceptance was performed on the operator's connected hardware. The production scope excludes onboard camera, SDMMC and unvalidated SPIFFS persistence. Do not treat the older pre-correction dist manifest as an installed v1.2.0 hardware acceptance record.
+
+See [v1.2.0 release notes](RELEASE_NOTES_v1.2.0.md) for provenance, included features, and compatibility constraints.
