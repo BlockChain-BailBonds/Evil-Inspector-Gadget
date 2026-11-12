@@ -85,8 +85,8 @@ Execute in this order:
    Require Flipper target 7 / installed-firmware-compatible API.
 
 6. Confirm the FAP enables both independent HAL directions before async RX:
-   furi_hal_serial_enable_direction(...FuriHalSerialDirectionTx)
-   furi_hal_serial_enable_direction(...FuriHalSerialDirectionRx)
+   furi_hal_serial_enable_direction(app->serial, FuriHalSerialDirectionTx)
+   furi_hal_serial_enable_direction(app->serial, FuriHalSerialDirectionRx)
    Preserve the newline plus 50 ms frame-boundary synchronization used when
    taking UART ownership from the Flipper expansion service.
 
@@ -134,7 +134,7 @@ remaining blockers. Never erase, format, or flash without an explicit guarded
 step and a verified recovery image.
 ```
 
-**Hardware verified:** S3 boot/USB, passive Wi-Fi/BLE inventory, ST7796S rendering, FT6336U touch, dashboard startup, dedicated UART1 in both directions, and 1,000 sequential PING/ACK exchanges. The v1.1 UART0 text below is retained only as historical rollback documentation.
+**Hardware accepted on the operator's device (2026-11-12):** S3 boot/USB, passive Wi-Fi/BLE inventory, ST7796S rendering, FT6336U touch, dashboard startup, dedicated UART1 in both directions, and 1,000 sequential PING/ACK exchanges. The v1.1 UART0 text below is retained only as historical rollback documentation.
 
 ## Historical v1.1 UART0 design — superseded
 
@@ -170,7 +170,7 @@ ufbt
 find dist -type f -name '*.fap'
 ```
 
-Copy the generated `.fap` to `/ext/apps/GPIO/` on the Flipper SD card, then open Apps → GPIO → Evil Inspector 918. Depending on firmware API version, rebuild against that same SDK version. Source and host tests are provided; **no claimed compiled FAP until `ufbt` runs successfully**.
+Copy the generated `.fap` to `/ext/apps/GPIO/` on the Flipper SD card, then open Apps → GPIO → Evil Inspector 918. Depending on firmware API version, rebuild against that same SDK version. The v1.2.0 FAP has passed host/CI builds; run `ufbt` against an SDK compatible with the actual installed Flipper firmware when rebuilding it locally.
 
 The Flipper is a monochrome 128×64 screen, so it uses a 1-bit derived Inspector image (`flipper_fap/inspector_gadget/inspector_assets.h`), not the S3's color artwork. Hold OK in the FAP to open the bounded UART1 monitor. Its fixed commands are PING, STATUS, HOME, passive WIFI inventory, and passive BLE inventory.
 
