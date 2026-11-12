@@ -174,7 +174,16 @@ static void dragon_open_uart(DragonApp* app) {
     // TX is enabled only because the cable is rerouted to dedicated S3 UART1
     // RX GPIO3. NEVER connect this TX to S3 GPIO44 / CH340 RX0.
     furi_hal_serial_enable_direction(app->serial, FuriHalSerialDirectionTx);
+    // RX is a separately controlled GPIO direction in the Flipper HAL. Async
+    // receive alone does not claim/configure USART RX (header pin 14).
+    furi_hal_serial_enable_direction(app->serial, FuriHalSerialDirectionRx);
     furi_hal_serial_async_rx_start(app->serial, dragon_uart_irq, app, false);
+    // Expansion detection may leave a partial line at the peer while serial
+    // ownership changes. End that line before sending the first framed command.
+    static const uint8_t frame_boundary = '\n';
+    furi_hal_serial_tx(app->serial, &frame_boundary, 1);
+    furi_hal_serial_tx_wait_complete(app->serial);
+    furi_delay_ms(50);
     app->uart_ready = true;
 }
 
