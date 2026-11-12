@@ -3,6 +3,8 @@
 // packet injection, wireless disruption, or exploit delivery.
 // Camera is triggered only by an explicit USB command; no background recording.
 #include <Arduino.h>
+#include <HardwareSerial.h>
+#include <cstring>
 #include <WiFi.h>
 #include <BLEDevice.h>
 #include <BLEScan.h>
@@ -17,7 +19,7 @@
 #endif
 
 namespace {
-constexpr char VERSION[] = "1.1.0-evil-inspector-gadget-uart0-rx-only";
+constexpr char VERSION[] = "1.2.0-evil-inspector-gadget-uart1-full-duplex";
 constexpr char LOG_FILE[] = "/evidence.jsonl";
 constexpr size_t WIFI_LIMIT = 48;
 constexpr size_t BLE_LIMIT = 48;
@@ -54,6 +56,16 @@ bool fsReady = false;
 bool loggingEnabled = false;
 char inputLine[LINE_LIMIT];
 size_t lineLength = 0;
+// Operator-verified UART1 physical pins. GPIO3 remains a boot strap input.
+constexpr int FLIPPER_RX_PIN = 3;
+constexpr int FLIPPER_TX_PIN = 7;
+constexpr uint32_t FLIPPER_BAUD = 115200;
+HardwareSerial flipperSerial(1);
+char flipperInput[64] = {};
+size_t flipperLength = 0;
+bool flipperDiscardLine = false;
+uint32_t flipperCommandsReceived = 0;
+uint32_t flipperCommandsRejected = 0;
 
 String jsonString(const String &value) {
   static const char HEX_DIGITS[] = "0123456789ABCDEF";
@@ -357,7 +369,7 @@ void printHelp() {
 #endif
   Serial.println("CAM STATUS | CAM CAPTURE | CAM SIZE QVGA | CAM SIZE VGA");
   Serial.println("LCD STATUS | LCD INIT | LCD TEST | LCD RED | LCD GREEN | LCD BLUE | LCD WHITE | LCD BLACK | LCD OFF");
-  Serial.println("TOUCH STATUS | TOUCH PROBE | TOUCH INIT | TOUCH READ | TOUCH TEST | TOUCH STOP | TOUCH ROTATE 0/1/2/3");
+  Serial.println("TOUCH STATUS | TOUCH DIAG | TOUCH ALT PROBE | TOUCH LEGACY RESET40 CONFIRM | TOUCH PROBE | TOUCH INIT | TOUCH READ | TOUCH TEST | TOUCH STOP | TOUCH ROTATE 0/1/2/3");
   Serial.println("LOG STATUS | LOG ON | LOG OFF | LOG DUMP | LOG CLEAR CONFIRM | LOG FORMAT CONFIRM");
   Serial.println("All cameras require explicit USB command. No Wi-Fi join, server, injection, or exploit payload.");
 }
@@ -409,7 +421,9 @@ void handle(String command) {
   else if (command == "SCAN ALL") { scanWifi(); scanBle(); }
   else if (command == "FINDINGS") findings();
   else if (command == "EXPORT") exportAll();
-  else if (command == "LINK STATUS") Serial.println("LINK STATUS S3_TX0_TO_FLIPPER_RX=ENABLED S3_RX0_SHARED_CH340=YES FLIPPER_TX=DISABLED PEER_ACK=UNAVAILABLE");
+  else if (command == "LINK STATUS") Serial.printf("LINK STATUS UART1_FULL_DUPLEX=YES S3_RX=%d S3_TX=%d BAUD=%lu CH340_UART0=UNTOUCHED RX_COMMANDS=%lu REJECTED=%lu GPIO3_STRAP=OPERATOR_VERIFIED GPIO7_WIRED=YES\n",
+        FLIPPER_RX_PIN, FLIPPER_TX_PIN, (unsigned long)FLIPPER_BAUD,
+        (unsigned long)flipperCommandsReceived, (unsigned long)flipperCommandsRejected);
   else if (command == "CAM STATUS") Serial.printf("CAM STATUS ready=%s profile=%d size=%s\n", cameraReady ? "YES" : "NO", CAMERA_PROFILE, cameraSize ? "VGA" : "QVGA");
   else if (command == "CAM CAPTURE") capture();
   else if (command == "CAM SIZE QVGA") setFrameSize(0);
@@ -422,6 +436,83 @@ void handle(String command) {
   else if (command.startsWith("LOG ")) logCommand(command);
   else Serial.println("ERROR UNKNOWN COMMAND; send HELP");
 }
+
+// Independent, bounded UART1 command protocol (never use CH340 UART0 for Flipper RX).
+// Accepted frames: EIG918|1|CMD|PING, STATUS, HOME, WIFI, BLE.
+// Wireless scans are passive; no Flipper RF/IR action is proxied.
+void flipperSendStatus() {
+  flipperSerial.printf("EIG918|1|STAT|up=%lu|wifi=%u|ble=%u\n",
+    (unsigned long)(millis() / 1000U), (unsigned)wifiSaved, (unsigned)bleSaved);
+}
+void flipperAck(const char* operation, const char* result) {
+  flipperSerial.printf("EIG918|1|ACK|op=%s|result=%s\n", operation, result);
+}
+void flipperHandleLine(const char* line) {
+  constexpr char prefix[] = "EIG918|1|CMD|";
+  if (strncmp(line, prefix, sizeof(prefix) - 1) != 0) {
+    ++flipperCommandsRejected;
+    flipperSerial.println("EIG918|1|ERR|INVALID_FRAME");
+    return;
+  }
+  const char* operation = line + sizeof(prefix) - 1;
+  if (strcmp(operation, "PING") == 0) {
+    ++flipperCommandsReceived;
+    flipperAck("PING", "OK");
+  } else if (strcmp(operation, "STATUS") == 0) {
+    ++flipperCommandsReceived;
+    flipperAck("STATUS", "OK");
+    flipperSendStatus();
+  } else if (strcmp(operation, "HOME") == 0) {
+    ++flipperCommandsReceived;
+#if defined(M3R_DRAGON_ENABLED) && M3R_DRAGON_ENABLED
+    redteam_dragon::start();
+    flipperAck("HOME", "OK");
+#else
+    flipperAck("HOME", "UNAVAILABLE");
+#endif
+  } else if (strcmp(operation, "WIFI") == 0) {
+    ++flipperCommandsReceived;
+    flipperAck("WIFI", "STARTED");
+    scanWifi();
+    flipperAck("WIFI", "DONE");
+    flipperSendStatus();
+  } else if (strcmp(operation, "BLE") == 0) {
+    ++flipperCommandsReceived;
+    flipperAck("BLE", "STARTED");
+    scanBle();
+    flipperAck("BLE", "DONE");
+    flipperSendStatus();
+  } else {
+    ++flipperCommandsRejected;
+    flipperSerial.println("EIG918|1|ERR|UNKNOWN_COMMAND");
+  }
+}
+void serviceFlipperLink() {
+  // Bounded work each tick, oversize or invalid lines rejected until newline.
+  for (unsigned handled = 0; handled < 64 && flipperSerial.available(); ++handled) {
+    const int value = flipperSerial.read();
+    if (value < 0) break;
+    const char c = static_cast<char>(value);
+    if (c == '\r' || c == '\n') {
+      if (!flipperDiscardLine && flipperLength != 0) {
+        flipperInput[flipperLength] = '\0';
+        flipperHandleLine(flipperInput);
+      }
+      flipperLength = 0;
+      flipperDiscardLine = false;
+      continue;
+    }
+    if (flipperDiscardLine) continue;
+    if (c < 32 || c > 126 || flipperLength + 1 >= sizeof(flipperInput)) {
+      flipperDiscardLine = true;
+      flipperLength = 0;
+      ++flipperCommandsRejected;
+      continue;
+    }
+    flipperInput[flipperLength++] = c;
+  }
+}
+
 }
 
 #if defined(M3R_DRAGON_ENABLED) && M3R_DRAGON_ENABLED
@@ -461,7 +552,9 @@ void setup() {
   Serial.begin(115200);
   const uint32_t started = millis();
   while (!Serial && millis() - started < 1800) delay(10);
-  Serial.println("918 TECHNOLOGIES EVIL INSPECTOR GADGET v1.1.0 UART0 TX TELEMETRY");
+  Serial.println("918 TECHNOLOGIES EVIL INSPECTOR GADGET v1.2.0 FLIPPER UART1 FULL DUPLEX");
+  flipperSerial.setRxBufferSize(256);
+  flipperSerial.begin(FLIPPER_BAUD, SERIAL_8N1, FLIPPER_RX_PIN, FLIPPER_TX_PIN);
   Serial.printf("MEMORY flash=%u psram=%u\n", (unsigned) ESP.getFlashChipSize(),
                 (unsigned) ESP.getPsramSize());
   fsReady = SPIFFS.begin(false);
@@ -474,23 +567,23 @@ void setup() {
   status();
   printHelp();
 #if defined(M3R_DRAGON_ENABLED) && M3R_DRAGON_ENABLED
-  redteam_dragon::start();  // Existing v1.0.8 LCD, touch, and radio stack retained.
+  // Display SPI is hardware-verified. Touch failure is non-fatal inside start(),
+  // so the dashboard is restored automatically after every power cycle.
+  redteam_dragon::start();
 #endif
-  // UART0 TX is shared by CH340 and the Flipper RX pin; send-only link.
-  // Nothing on the S3 is reconfigured to drive/read an additional UART.
-  Serial.println("EIG918|1|HELLO|brand=918|app=INSPECTOR|mode=RX_ONLY");
+  // Flipper UART1 is physically independent of the USB-UART0 CH340 bridge.
+  flipperSerial.println("EIG918|1|HELLO|brand=918|app=INSPECTOR|mode=FULL_DUPLEX");
+  Serial.println("FLIPPER LINK UART1 GPIO3=RX GPIO7=TX 115200 8N1");
 }
 void loop() {
   static uint32_t lastLinkFrame = 0;
   const uint32_t linkNow = millis();
   if ((uint32_t)(linkNow - lastLinkFrame) >= 2500U) {
     lastLinkFrame = linkNow;
-    // Fixed, ASCII, bounded telemetry; no SSIDs, BLE addresses or secrets.
-    // Flipper listens on pin 14. Flipper TX must not drive S3 RX0 while CH340 is present.
-    Serial.printf("EIG918|1|STAT|up=%lu|wifi=%u|ble=%u\n",
-                  (unsigned long)(linkNow / 1000U),
-                  (unsigned)wifiSaved, (unsigned)bleSaved);
+    // UART1 fixed telemetry, no SSIDs or device addresses.
+    flipperSendStatus();
   }
+  serviceFlipperLink();
   while (Serial.available()) {
     const int read = Serial.read();
     if (read < 0) break;

@@ -64,7 +64,88 @@ struct Point { bool down; uint8_t count; uint16_t rawX; uint16_t rawY; uint16_t 
 inline void startBus() {
   if (busStarted) return;
   Wire.begin(M3R_TOUCH_PIN_SDA, M3R_TOUCH_PIN_SCL, 100000);
+  Wire.setTimeOut(50);
   busStarted = true;
+}
+inline void diagnoseBus(Print &out) {
+  if (busStarted) {
+    Wire.end();
+    busStarted = false;
+  }
+
+  // Inspect idle levels before activating I2C. HIGH does not prove continuity.
+  pinMode(M3R_TOUCH_PIN_SDA, INPUT);
+  pinMode(M3R_TOUCH_PIN_SCL, INPUT);
+  delay(2);
+  const int sda = digitalRead(M3R_TOUCH_PIN_SDA);
+  const int scl = digitalRead(M3R_TOUCH_PIN_SCL);
+  out.printf("TOUCH DIAG idle_sda=%d idle_scl=%d\n", sda, scl);
+
+  const bool started = Wire.begin(M3R_TOUCH_PIN_SDA, M3R_TOUCH_PIN_SCL, 100000);
+  if (!started) {
+    out.println("TOUCH DIAG ERROR I2C_BEGIN_FAILED");
+    return;
+  }
+  Wire.setTimeOut(50);
+  busStarted = true;
+
+  Wire.beginTransmission(0x38);
+  const uint8_t result38 = Wire.endTransmission(true);
+  Wire.beginTransmission(0x48);
+  const uint8_t result48 = Wire.endTransmission(true);
+  out.printf("TOUCH DIAG addr38=%u ack38=%s addr48=%u ack48=%s rst=EXTERNAL irq=GPIO40_UNDRIVEN\n",
+    result38, result38 == 0 ? "YES" : "NO", result48, result48 == 0 ? "YES" : "NO");
+}
+inline void diagnoseAlternatePins(Print &out) {
+  constexpr int alternateSda = 1;
+  constexpr int alternateScl = 2;
+  Wire.end();
+  busStarted = false;
+  pinMode(alternateSda, INPUT_PULLUP);
+  pinMode(alternateScl, INPUT_PULLUP);
+  delay(2);
+  out.printf("TOUCH ALT pins sda=1 scl=2 idle_sda=%s idle_scl=%s\n",
+    digitalRead(alternateSda) ? "HIGH" : "LOW", digitalRead(alternateScl) ? "HIGH" : "LOW");
+  Wire.begin(alternateSda, alternateScl, 100000);
+  Wire.setTimeOut(50);
+  Wire.beginTransmission(ADDRESS);
+  const uint8_t result = Wire.endTransmission();
+  out.printf("TOUCH ALT probe=0x38 result=%u ack=%s\n", result, result == 0 ? "YES" : "NO");
+  Wire.end();
+  Wire.begin(M3R_TOUCH_PIN_SDA, M3R_TOUCH_PIN_SCL, 100000);
+  Wire.setTimeOut(50);
+  busStarted = true;
+}
+inline void legacyReset40Probe(Print &out) {
+  // Explicit recovery only: reproduces the repository's former known-good
+  // CTP_SDA=GPIO1, CTP_SCL=GPIO2, CTP_RST=GPIO40 sequence. SDMMC is disabled.
+  Wire.end();
+  busStarted = false;
+  controllerReady = false;
+  pinMode(40, OUTPUT);
+  digitalWrite(40, LOW);
+  delay(15);
+  digitalWrite(40, HIGH);
+  delay(250);
+  const bool started = Wire.begin(1, 2, 100000);
+  if (!started) {
+    pinMode(40, INPUT);
+    out.println("TOUCH LEGACY ERROR I2C_BEGIN_FAILED");
+    return;
+  }
+  Wire.setTimeOut(50);
+  busStarted = true;
+  Wire.beginTransmission(ADDRESS);
+  const uint8_t result = Wire.endTransmission(true);
+  controllerReady = result == 0;
+  out.printf("TOUCH LEGACY reset=GPIO40 sda=1 scl=2 addr=0x38 result=%u ack=%s\n",
+    result, controllerReady ? "YES" : "NO");
+  if (!controllerReady) {
+    Wire.end();
+    busStarted = false;
+    pinMode(40, INPUT);
+    startBus();
+  }
 }
 inline bool probe() {
   startBus();
@@ -123,12 +204,17 @@ inline void status(Print &out) {
 inline void init(Print &out) {
   testActive = false;
   startBus();
-  // RST low pulse is explicit and never happens in setup().
+  // RST=-1 requires an external pull-up to 3.3V.
+  // Never drive GPIO40 in this profile; it is SDMMC D0.
+#if M3R_TOUCH_PIN_RST >= 0
   pinMode(M3R_TOUCH_PIN_RST, OUTPUT);
   digitalWrite(M3R_TOUCH_PIN_RST, LOW);
   delay(15);
   digitalWrite(M3R_TOUCH_PIN_RST, HIGH);
   delay(250);
+#else
+  delay(100);
+#endif
   controllerReady = probe();
   if (!controllerReady) {
     out.println("TOUCH INIT FAIL no_i2c_ack=0x38 check GND/SCL/SDA/RST and board pin routing");
@@ -149,6 +235,9 @@ inline void report(Print &out, const Point &point) {
 }
 inline void handle(const String &cmd, Print &out) {
   if (cmd == "TOUCH STATUS") {status(out);return;}
+  if (cmd == "TOUCH DIAG") {diagnoseBus(out);return;}
+  if (cmd == "TOUCH ALT PROBE") {diagnoseAlternatePins(out);return;}
+  if (cmd == "TOUCH LEGACY RESET40 CONFIRM") {legacyReset40Probe(out);return;}
   if (cmd == "TOUCH PROBE") {
     out.println(probe() ? "TOUCH PROBE found=0x38 (ack only)" : "TOUCH PROBE missing=0x38 check SDA/SCL/VCC/GND");return;
   }

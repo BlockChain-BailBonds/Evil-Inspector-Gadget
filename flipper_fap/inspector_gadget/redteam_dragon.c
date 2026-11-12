@@ -1,5 +1,5 @@
-// 918 Technologies / Evil Inspector Gadget - Flipper UART0 receive-only launcher
-// This FAP intentionally NEVER transmits UART data or sends radio frames itself.
+// 918 Technologies / Evil Inspector Gadget - Flipper UART1 full-duplex GPIO FAP
+// This FAP sends only fixed local UART commands to S3, never RF/IR transmissions.
 #include <furi.h>
 #include <furi_hal.h>
 #include <gui/gui.h>
@@ -92,11 +92,11 @@ static void dragon_draw(Canvas* canvas, void* context) {
         canvas_draw_str(canvas, 1, 48, "Open native Flipper app?");
         canvas_draw_str(canvas, 1, 61, "OK:confirm   BACK:cancel");
     } else {
-        canvas_draw_str(canvas, 1, 22, "S3 UART0 RX / 115200");
+        canvas_draw_str(canvas, 1, 22, "U:ping D:status L:home");
         for(size_t i = 0; i < DRAGON_VIEW_ROWS; i++) {
             canvas_draw_str(canvas, 1, (int)(33 + i * 9), app->lines[i]);
         }
-        canvas_draw_str(canvas, 1, 62, "BACK:menu");
+        canvas_draw_str(canvas, 1, 62, "R:wifi OK:ble BK:back");
     }
 }
 
@@ -171,10 +171,19 @@ static void dragon_open_uart(DragonApp* app) {
     app->serial = furi_hal_serial_control_acquire(FuriHalSerialIdUsart);
     if(!app->serial) return;
     furi_hal_serial_init(app->serial, DRAGON_BAUD);
-    // The S3 UART0 RX line is also driven by the CH340. Never drive it from
-    // the Flipper. This FAP is a one-way RX observer by design.
-    furi_hal_serial_disable_direction(app->serial, FuriHalSerialDirectionTx);
+    // TX is enabled only because the cable is rerouted to dedicated S3 UART1
+    // RX GPIO3. NEVER connect this TX to S3 GPIO44 / CH340 RX0.
+    furi_hal_serial_enable_direction(app->serial, FuriHalSerialDirectionTx);
+    // RX is a separately controlled GPIO direction in the Flipper HAL. Async
+    // receive alone does not claim/configure USART RX (header pin 14).
+    furi_hal_serial_enable_direction(app->serial, FuriHalSerialDirectionRx);
     furi_hal_serial_async_rx_start(app->serial, dragon_uart_irq, app, false);
+    // Expansion detection may leave a partial line at the peer while serial
+    // ownership changes. End that line before sending the first framed command.
+    static const uint8_t frame_boundary = '\n';
+    furi_hal_serial_tx(app->serial, &frame_boundary, 1);
+    furi_hal_serial_tx_wait_complete(app->serial);
+    furi_delay_ms(50);
     app->uart_ready = true;
 }
 
@@ -215,6 +224,16 @@ static void dragon_launch_native(DragonApp* app) {
     app->running = false;
 }
 
+// Finite commands only: no arbitrary Flipper inputs become S3 shell commands.
+static void dragon_send_command(DragonApp* app, const char* operation) {
+    if(!app->uart_ready || !app->serial || !operation) return;
+    char line[48] = {0};
+    const int length = snprintf(line, sizeof(line), "EIG918|1|CMD|%s\n", operation);
+    if(length <= 0 || (size_t)length >= sizeof(line)) return;
+    furi_hal_serial_tx(app->serial, (const uint8_t*)line, (size_t)length);
+    furi_hal_serial_tx_wait_complete(app->serial);
+}
+
 static void dragon_handle_input(DragonApp* app, const InputEvent* event) {
     if(event->key == InputKeyBack && event->type == InputTypeShort) {
         if(app->screen == DragonScreenMenu) app->running = false;
@@ -227,7 +246,17 @@ static void dragon_handle_input(DragonApp* app, const InputEvent* event) {
         return;
     }
     if(event->type != InputTypeShort) return;
-    if(app->screen == DragonScreenMonitor) return;
+    if(app->screen == DragonScreenMonitor) {
+        switch(event->key) {
+        case InputKeyUp: dragon_send_command(app, "PING"); break;
+        case InputKeyDown: dragon_send_command(app, "STATUS"); break;
+        case InputKeyLeft: dragon_send_command(app, "HOME"); break;
+        case InputKeyRight: dragon_send_command(app, "WIFI"); break;
+        case InputKeyOk: dragon_send_command(app, "BLE"); break;
+        default: break;
+        }
+        return;
+    }
     if(app->screen == DragonScreenConfirm) {
         if(event->key == InputKeyOk) dragon_launch_native(app);
         return;

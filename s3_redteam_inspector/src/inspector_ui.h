@@ -182,7 +182,7 @@ inline void drawStatus(){
   information(221,"PSRAM",String(ESP.getPsramSize()/1024/1024)+" MiB");
   information(272,"UPTIME",String(millis()/1000)+" seconds");
   information(323,"SCAN CACHE",String(wifiResults())+" WIFI / "+String(bleResults())+" BLE");
-  information(374,"FLIPPER LINK","UART0 TX ONLY / 115200 / GPIO",ORANGE);
+  information(374,"FLIPPER LINK","UART1 TX+RX / 115200",ORANGE);
   footer("LIVE DEVICE METRICS");
 }
 // ST7796S is left in the proven 480x320 landscape SPI mode. Rotate the
@@ -244,7 +244,9 @@ inline void start(){
   }
   mermaid_lcd::initialize();
   if(!mermaid_touch::controllerReady)mermaid_touch::init(Serial);
-  if(!mermaid_touch::controllerReady){Serial.println("INSPECTOR ERROR TOUCH_UNAVAILABLE; USB COMMANDS AVAILABLE");return;}
+  if(!mermaid_touch::controllerReady){
+    Serial.println("INSPECTOR WARN TOUCH_UNAVAILABLE; UI CONTINUES WITH USB/FLIPPER CONTROL");
+  }
   enabled=true;
   touchWasDown=false;
   navigate(Page::Home);

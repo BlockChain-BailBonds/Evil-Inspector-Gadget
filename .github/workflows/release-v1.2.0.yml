@@ -1,0 +1,116 @@
+name: Publish Evil Inspector Gadget v1.2.0
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - README.md
+      - README-FLIPPER-DUPLEX.md
+      - RELEASE_NOTES_v1.2.0.md
+      - 's3_redteam_inspector/**'
+      - 'flipper_fap/**'
+      - '.github/workflows/release-v1.2.0.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: evil-inspector-v1.2.0-release
+  cancel-in-progress: false
+
+jobs:
+  validate-build-release:
+    if: github.repository == 'BlockChain-BailBonds/Evil-Inspector-Gadget' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact release source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install reproducible host dependencies
+        run: |
+          python -m pip install 'Pillow==11.3.0' 'platformio==6.1.18' ufbt
+
+      - name: Run all source, protocol, backup and partition checks
+        run: |
+          set -euo pipefail
+          sh test_all.sh
+
+      - name: Compile S3 application image only
+        working-directory: s3_redteam_inspector
+        run: |
+          set -euo pipefail
+          pio run -e s3_uart_inspector
+          test -s .pio/build/s3_uart_inspector/firmware.bin
+
+      - name: Compile canonical Flipper FAP only
+        working-directory: flipper_fap/inspector_gadget
+        run: |
+          set -euo pipefail
+          ufbt
+          find dist -type f -name '*.fap' -print -quit | grep -q .
+
+      - name: Stage only verified build outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-artifacts
+          cp s3_redteam_inspector/.pio/build/s3_uart_inspector/firmware.bin release-artifacts/eig-s3-v1.2.0-app.bin
+          mapfile -d '' -t faps < <(find flipper_fap/inspector_gadget/dist -type f -name '*.fap' -print0)
+          if [[ "${#faps[@]}" -ne 1 ]]; then
+            printf 'Expected exactly one FAP, found %s\n' "${#faps[@]}" >&2
+            exit 1
+          fi
+          cp "${faps[0]}" release-artifacts/eig-flipper-v1.2.0.fap
+          (
+            cd release-artifacts
+            sha256sum eig-s3-v1.2.0-app.bin eig-flipper-v1.2.0.fap > SHA256SUMS.txt
+            sha256sum -c SHA256SUMS.txt
+          )
+          sha256sum README.md README-FLIPPER-DUPLEX.md RELEASE_NOTES_v1.2.0.md > release-artifacts/SOURCE_DOC_SHA256SUMS.txt
+          printf '%s\n' "${GITHUB_SHA}" > release-artifacts/SOURCE_COMMIT.txt
+
+      - name: Archive independently inspectable build evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: evil-inspector-v1.2.0-release-candidate
+          path: release-artifacts/*
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Create immutable release version if not already published
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view v1.2.0 --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "Release v1.2.0 already exists; refusing to overwrite existing assets or tag."
+            exit 0
+          fi
+          if git rev-parse -q --verify refs/tags/v1.2.0 >/dev/null; then
+            echo "Tag v1.2.0 already exists locally without a release; refusing to retag."
+            exit 1
+          fi
+          gh release create v1.2.0 release-artifacts/eig-s3-v1.2.0-app.bin release-artifacts/eig-flipper-v1.2.0.fap release-artifacts/SHA256SUMS.txt release-artifacts/SOURCE_DOC_SHA256SUMS.txt release-artifacts/SOURCE_COMMIT.txt \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "${GITHUB_SHA}" \
+            --title "Evil Inspector Gadget v1.2.0 — Hardware Validated" \
+            --notes-file RELEASE_NOTES_v1.2.0.md \
+            --latest
+
+      - name: Confirm published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release view v1.2.0 --repo "${GITHUB_REPOSITORY}" --json url,tagName,isDraft,isPrerelease,assets
