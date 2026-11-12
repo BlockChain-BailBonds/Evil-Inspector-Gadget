@@ -91,6 +91,26 @@ inline void diagnoseBus(Print &out) {
     result, result == 0 ? "YES" : "NO", digitalRead(M3R_TOUCH_PIN_SDA) ? "HIGH" : "LOW",
     digitalRead(M3R_TOUCH_PIN_SCL) ? "HIGH" : "LOW");
 }
+inline void diagnoseAlternatePins(Print &out) {
+  constexpr int alternateSda = 1;
+  constexpr int alternateScl = 2;
+  Wire.end();
+  busStarted = false;
+  pinMode(alternateSda, INPUT_PULLUP);
+  pinMode(alternateScl, INPUT_PULLUP);
+  delay(2);
+  out.printf("TOUCH ALT pins sda=1 scl=2 idle_sda=%s idle_scl=%s\n",
+    digitalRead(alternateSda) ? "HIGH" : "LOW", digitalRead(alternateScl) ? "HIGH" : "LOW");
+  Wire.begin(alternateSda, alternateScl, 100000);
+  Wire.setTimeOut(50);
+  Wire.beginTransmission(ADDRESS);
+  const uint8_t result = Wire.endTransmission();
+  out.printf("TOUCH ALT probe=0x38 result=%u ack=%s\n", result, result == 0 ? "YES" : "NO");
+  Wire.end();
+  Wire.begin(M3R_TOUCH_PIN_SDA, M3R_TOUCH_PIN_SCL, 100000);
+  Wire.setTimeOut(50);
+  busStarted = true;
+}
 inline bool probe() {
   startBus();
   Wire.beginTransmission(ADDRESS);
@@ -180,6 +200,7 @@ inline void report(Print &out, const Point &point) {
 inline void handle(const String &cmd, Print &out) {
   if (cmd == "TOUCH STATUS") {status(out);return;}
   if (cmd == "TOUCH DIAG") {diagnoseBus(out);return;}
+  if (cmd == "TOUCH ALT PROBE") {diagnoseAlternatePins(out);return;}
   if (cmd == "TOUCH PROBE") {
     out.println(probe() ? "TOUCH PROBE found=0x38 (ack only)" : "TOUCH PROBE missing=0x38 check SDA/SCL/VCC/GND");return;
   }
