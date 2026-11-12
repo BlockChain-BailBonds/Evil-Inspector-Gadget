@@ -30,12 +30,11 @@ GPIO27 is reserved by the N16R8 flash/PSRAM memory interface and must not be
 configured as a backlight output; doing so caused a reproducible double
 exception followed by `TG1WDT_SYS_RST` during `LCD INIT`.
 
-## Recovery-safe startup
+## Startup behavior
 
-The display and touch buses are not initialized automatically at boot. This
-keeps USB diagnostics and UART1 available if a peripheral bus is disconnected
-or held. Validate `LCD INIT` and `TOUCH INIT` separately, then issue
-`DRAGON START`.
+The hardware-verified display starts the Inspector dashboard automatically
+after every boot. Touch initialization failure is non-fatal, preserving USB and
+Flipper control while the FT6336U electrical/reset issue is diagnosed.
 
 The dashboard remains available through USB and Flipper commands when the
 touch controller is absent. A failed FT6336U probe is reported as a warning and
