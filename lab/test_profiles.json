@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "region": "Tulsa, Oklahoma, United States",
+  "profiles": [
+    {
+      "id": "eig-readonly-bridge-inspection",
+      "name": "EIG read-only bridge inspection",
+      "hardware": ["Samsung Galaxy S26 Ultra", "EIG ESP32-S3 gateway", "Flipper Zero"],
+      "supported": true,
+      "transmission_enabled": false,
+      "tests": [
+        {"id": "bridge-ping", "op": "ping", "timeout_s": 5, "procedure": "Send the documented authenticated ping request.", "expected": "Authenticated response with matching request id.", "pass": "response.ok is true and response.id matches.", "evidence": "request and response metadata, secret-free."},
+        {"id": "device-info", "op": "device_info", "timeout_s": 5, "procedure": "Request documented device identity information.", "expected": "Identity response from the established bridge.", "pass": "response.ok is true and identity fields are present.", "evidence": "redacted response metadata."},
+        {"id": "bridge-status", "op": "status", "timeout_s": 5, "procedure": "Request current bridge status.", "expected": "Status response without changing device state.", "pass": "response.ok is true.", "evidence": "status fields and timestamp."},
+        {"id": "offline-capture-analysis", "op": "local_analysis", "timeout_s": 10, "procedure": "Analyze an operator-supplied capture file without opening a radio or replaying it.", "expected": "Format and metadata report only.", "pass": "Input is readable and no transmission action is attempted.", "evidence": "hash, size, parser result."}
+      ],
+      "unsupported": ["radio transmit", "radio replay", "GPIO control", "Flipper radio transmit", "credential capture", "destructive operations"],
+      "sources": ["../README.md", "../protocol/PROTOCOL.md", "../docs/HARDWARE.md"]
+    }
+  ]
+}
