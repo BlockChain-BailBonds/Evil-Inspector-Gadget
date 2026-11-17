@@ -1,5 +1,6 @@
 name: Validate 918 Flipper Full-Duplex Protocol
 on:
+  workflow_dispatch:
   push:
     branches:
       - feature/flipper-full-duplex-uart1
