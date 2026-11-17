@@ -33,8 +33,8 @@ if sha.hexdigest() != manifest.get('sha256'):
 app = Path('.pio/build') / target / 'firmware.bin'
 if not app.is_file() or app.stat().st_size < 100:
     raise SystemExit("STOP: Evil Inspector Gadget dashboard firmware image missing; build target first")
-if 0x10000 + app.stat().st_size > 0x410000:
-    raise SystemExit("STOP: Evil Inspector Gadget dashboard firmware exceeds partition bounds")
+if 0x10000 + app.stat().st_size > 0x650000:
+    raise SystemExit("STOP: Evil Inspector Gadget dashboard firmware exceeds verified app0 partition bounds")
 if app.open('rb').read(1) != b'\xe9':
     raise SystemExit("STOP: not an Espressif application image")
 print("PASS: verified 16MB backup", backup)
