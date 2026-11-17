@@ -1,11 +1,9 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
+#include "eig_hardware_config.h"
 
-static constexpr uint32_t EIG_BAUD = 115200;
-static constexpr int FLIPPER_TX = 43;
-static constexpr int FLIPPER_RX = 44;
-HardwareSerial flipper(0);
+HardwareSerial flipper(EIG_FLIPPER_UART_INSTANCE);
 WebServer server(80);
 
 static void send_json(int status, const String& body) {
@@ -35,7 +33,7 @@ static void handle_uart() {
 
 void setup() {
   Serial.begin(115200);
-  flipper.begin(EIG_BAUD, SERIAL_8N1, FLIPPER_RX, FLIPPER_TX);
+  flipper.begin(EIG_FLIPPER_BAUD, SERIAL_8N1, EIG_FLIPPER_RX_GPIO, EIG_FLIPPER_TX_GPIO);
   WiFi.mode(WIFI_AP);
   WiFi.softAP("EIG-Gateway", nullptr);
   server.on("/health", HTTP_GET, handle_health);
