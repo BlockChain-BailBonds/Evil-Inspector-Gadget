@@ -17,8 +17,8 @@
 
 namespace redteam_dragon {
 constexpr uint16_t W=320, H=480;
-constexpr uint16_t DARK=0x0802, PANEL=0x1005, PANEL2=0x18A8, RED=0xF124;
-constexpr uint16_t WHITE=0xFFFF, MUTED=0xC659, GREEN=0x27E8, ORANGE=0xFD20;
+constexpr uint16_t DARK=0x0818, PANEL=0x102A, PANEL2=0x245F, BLUE=0x2D7F, CYAN=0x07FF;
+constexpr uint16_t WHITE=0xFFFF, MUTED=0x9DFF, GREEN=0x07FF, ORANGE=0x5D9F;
 enum class Page: uint8_t {Home, Wifi, Ble, Camera, Logs, Settings, Status};
 static Page page=Page::Home;
 static uint16_t *frame=nullptr;
@@ -91,16 +91,16 @@ inline void copyApprovedDashboard(){
 }
 inline void header(const char *title){
   rect(0,0,W,64,DARK);
-  rect(0,62,W,2,RED);
+  rect(0,62,W,2,BLUE);
   text(12,8,"918 TECHNOLOGIES",WHITE,2);
-  text(12,38,"EVIL INSPECTOR GADGET",RED,1);
+  text(12,38,"EVIL INSPECTOR GADGET",BLUE,1);
   text(12,74,title,WHITE,2);
-  rect(8,101,304,1,RED);
+  rect(8,101,304,1,BLUE);
 }
 inline void footer(const char *hint="BACK        NEXT / SELECT"){
   rect(0,443,W,37,DARK);
-  rect(0,442,W,1,RED);
-  rect(8,452,70,21,PANEL2); outline(8,452,70,21,RED);
+  rect(0,442,W,1,BLUE);
+  rect(8,452,70,21,PANEL2); outline(8,452,70,21,BLUE);
   text(18,456,"BACK",WHITE,1);
   text(93,455,hint,MUTED,1);
 }
@@ -114,8 +114,20 @@ inline String shortText(const String& textIn,unsigned limit=34){
   if(textIn.length()<=limit) return textIn;
   return textIn.substring(0,limit-1)+"~";
 }
+inline void drawGadgetBadge(){
+  const int x=255,y=18;
+  rect(x,y,56,56,DARK); outline(x,y,56,56,BLUE);
+  const int cx=x+22,cy=y+24;
+  for(int dy=-16;dy<=16;++dy) for(int dx=-16;dx<=16;++dx){
+    const int d=dx*dx+dy*dy;
+    if(d>=180 && d<=250) pixel(cx+dx,cy+dy,CYAN);
+  }
+  rect(cx+10,cy+10,4,22,BLUE); rect(cx+12,cy+28,18,4,BLUE);
+  rect(x+37,y+39,12,4,BLUE); rect(x+45,y+45,4,12,CYAN);
+}
 inline void drawHome(){
   copyApprovedDashboard();
+  drawGadgetBadge();
 }
 inline void drawWifi(){
   fill(DARK);header("WI-FI SCAN");
@@ -161,7 +173,7 @@ inline void drawLogs(){
   fill(DARK);header("LOGS / EXPORT");
   information(130,"FILESYSTEM",filesystemReady()?"MOUNTED":"UNAVAILABLE",filesystemReady()?GREEN:ORANGE);
   information(186,"LOGGING",loggingIsEnabled()?"ENABLED":"DISABLED");
-  outline(14,266,290,64,RED);text(26,282,"EXPORT OVER USB",WHITE,2);
+  outline(14,266,290,64,BLUE);text(26,282,"EXPORT OVER USB",WHITE,2);
   text(20,353,"USE USB: EXPORT / LOG STATUS",MUTED,1);
   footer("TAP EXPORT PANEL");
 }
@@ -170,7 +182,7 @@ inline void drawSettings(){
   information(125,"DISPLAY","ST7796S 480x320 / PORTRAIT UI",GREEN);
   information(182,"TOUCH","FT6336U / I2C 0x38",GREEN);
   information(239,"CAMERA","DISABLED FOR GPIO SAFETY",ORANGE);
-  outline(14,320,291,65,RED);
+  outline(14,320,291,65,BLUE);
   text(22,337,"FLIP TOUCH 180",WHITE,2);
   textString(22,363,"MODE "+String(portraitTouchRotation),MUTED,1);
   footer("TAP FLIP IF NEEDED");
